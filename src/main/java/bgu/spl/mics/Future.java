@@ -1,6 +1,7 @@
 package bgu.spl.mics;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A Future object represents a promised result - an object that will
@@ -10,16 +11,23 @@ import java.util.concurrent.TimeUnit;
  * Only private methods may be added to this class.
  * No public constructor is allowed except for the empty constructor.
  */
+
+ /* ====================================
+ To Do:
+ check if get() needs to be synchronized
+ check if resolve() needs to be synched
+ implement timeService for the second get(time,unit) function
+ ====================================*/
 public class Future<T> {
 	
-	private boolean isDone;
 	private T result;
+	private boolean isDone;
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
 	public Future() {
-		isDone = false;
 		result = null;
+		isDone = false;
 	}
 	
 	/**
@@ -31,23 +39,26 @@ public class Future<T> {
      * 	       
      */
 	public T get() {
-		//TODO: implement this.
-		return null;
+		while (!isDone) {
+			
+		}
+		//===========Check Later==================
+		return result;
 	}
 	
 	/**
      * Resolves the result of this Future object.
      */
-	public void resolve (T result) {
-		//TODO: implement this.
+	public void resolve (T result) { //Check if needs to be synched
+		this.result = result;
+		isDone = true;
 	}
 	
 	/**
      * @return true if this object has been resolved, false otherwise
      */
 	public boolean isDone() {
-		//TODO: implement this.
-		return false;
+		return isDone;
 	}
 	
 	/**
