@@ -12,11 +12,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class Future<T> {
 	
+	private boolean isDone;
+	private T result;
 	/**
 	 * This should be the the only public constructor in this class.
 	 */
 	public Future() {
-		//TODO: implement this
+		isDone = false;
+		result = null;
 	}
 	
 	/**
@@ -59,8 +62,12 @@ public class Future<T> {
      *         elapsed, return null.
      */
 	public T get(long timeout, TimeUnit unit) {
-		//TODO: implement this.
-		return null;
+		long currTime;
+		long finishTime = currTime + timeout; //Convert to same time units
+		while(!isDone() & currTime<finishTime){
+			currTime = currTimeService;
+		}
+		return result;
 	}
 
 }
