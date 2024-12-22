@@ -1,5 +1,10 @@
 package bgu.spl.mics;
 
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
  * The MicroService is an abstract class that any micro-service in the system
  * must extend. The abstract MicroService class is responsible to get and
@@ -23,12 +28,21 @@ public abstract class MicroService implements Runnable {
     private boolean terminated = false;
     private final String name;
 
+    // Added fields:
+    // Holds the messageBus singleton
+    private MessageBusImpl msgBus = MessageBusImpl.getInstance();
+    // Maps that hold the pairs of messages and their callbacks
+    private ConcurrentHashMap<Class<? extends Event<?>>, Callback> eventsCalls;
+	private ConcurrentHashMap<Class<? extends Broadcast>, Callback> broadcastsCalls;
+
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
      *             does not have to be unique)
      */
     public MicroService(String name) {
         this.name = name;
+        eventsCalls = new ConcurrentHashMap<>();
+        broadcastsCalls = new ConcurrentHashMap<>();
     }
 
     /**
@@ -53,7 +67,9 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
-        //TODO: implement this.
+        msgBus.subscribeEvent(type, this);
+        eventsCalls.computeIfAbsent(type, k -> callback);
+        return T; // What is T? maybe a Future
     }
 
     /**
@@ -77,9 +93,10 @@ public abstract class MicroService implements Runnable {
      *                 queue.
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
-        //TODO: implement this.
+        msgBus.subscribeBroadcast(type, this);
+        broadcastsCalls.computeIfAbsent(type, k -> callback);
     }
-
+    
     /**
      * Sends the event {@code e} using the message-bus and receive a {@link Future<T>}
      * object that may be resolved to hold a result. This method must be Non-Blocking since
