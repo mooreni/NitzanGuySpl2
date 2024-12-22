@@ -1,5 +1,9 @@
 package bgu.spl.mics.application;
 
+import bgu.spl.mics.MessageBusImpl;
+import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.services.TimeService;
+
 /**
  * The main entry point for the GurionRock Pro Max Ultra Over 9000 simulation.
  * <p>
@@ -18,6 +22,8 @@ public class GurionRockRunner {
      */
     public static void main(String[] args) {
         System.out.println("Hello World!");
+        MessageBusImpl bus = MessageBusImpl.getInstance();
+        bus.subscribeBroadcast(TickBroadcast.class, new TimeService(500, 3));
 
         // TODO: Parse configuration file.
         // TODO: Initialize system components and services.

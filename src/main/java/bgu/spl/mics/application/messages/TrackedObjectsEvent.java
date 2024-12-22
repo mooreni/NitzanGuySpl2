@@ -2,9 +2,13 @@ package bgu.spl.mics.application.messages;
 
 import bgu.spl.mics.Event;
 import bgu.spl.mics.application.objects.LandMark;
+import bgu.spl.mics.Future;
 
-import java.util.concurrent.Future;
-
+//Landmark might not be the correct object for the future!
 public class TrackedObjectsEvent implements Event<LandMark> {
+
     Future<LandMark> future;
+    public Future<LandMark> getFuture() {
+        return future;
+    }
 }
