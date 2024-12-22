@@ -14,7 +14,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * The {@link MessageBusImpl class is the implementation of the MessageBus interface.
  * Write your implementation here!
- * Only private fields and methods can be added to this class.
+ * Only one public method (in addition to getters which can be public solely for unit testing) may be added to this class
+ * All other methods and members you add the class must be private.
  */
 public class MessageBusImpl implements MessageBus {
 	//Class should have a list/hashMap? of Event Types, each holding a list of microServices subscribed
