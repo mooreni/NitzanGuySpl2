@@ -15,7 +15,8 @@ import java.util.concurrent.atomic.AtomicReference;
  /* ====================================
  To Do:
  check if get() needs to be synchronized
- check if resolve() needs to be synched
+ check if resolve() needs to be synched and if needs to check for null - exception?
+	**probably doesnt need to throw exception - see page 4
  implement timeService for the second get(time,unit) function
  ====================================*/
 public class Future<T> {
