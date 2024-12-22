@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Only private fields and methods can be added to this class.
  */
 public class MessageBusImpl implements MessageBus {
+	//Class should have a list/hashMap? of Event Types, each holding a list of microServices subscribed
 
 	// Added fields:
 	// The single instance of the MessageBusImpl class
