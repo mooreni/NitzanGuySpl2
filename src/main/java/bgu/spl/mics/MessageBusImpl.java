@@ -16,10 +16,15 @@ import bgu.spl.mics.application.objects.Pose;
 
 
 /*ToDO:
-	1. Figure out the Events - some Event handler is needed in order to make an Event object that
-	   holds a Future object
-	2. Thread safety of the class - partial sync maybe?
-	3.
+	1. Thread safety of the class - partial sync maybe?
+	Functions: 	!!sendEvent - figure out how to return the future type
+				unregister - probably wrong, need to think about the syncing here
+
+				SubscribeEvent, SubscribeBroadCast - good, unsure about the syncing...
+				complete - good, though might need sync. Arent sure about the result types though
+				sendBroadCast - i think its ok, check sync
+				Register - good?
+				awaitMessage - i think it looks good.
 
 
 /**
@@ -29,8 +34,6 @@ import bgu.spl.mics.application.objects.Pose;
  * All other methods and members you add the class must be private.
  */
 public class MessageBusImpl implements MessageBus {
-	//Class should have a list/hashMap? of Event Types, each holding a list of microServices subscribed
-
 	// Added fields:
 	// The single instance of the MessageBusImpl class
     private static final MessageBusImpl instance = new MessageBusImpl();
@@ -40,23 +43,19 @@ public class MessageBusImpl implements MessageBus {
 	// Map that holds the registered services with their queues of messages
 	private ConcurrentHashMap<MicroService, ConcurrentLinkedQueue<Message>> registeredServices;
 
-	Object lockEventSubs, lockBroadcastSubs, lockRegisteredServices;
-
     // Private constructor to prevent instantiation from outside
     private MessageBusImpl() {
         eventsSubs = new ConcurrentHashMap<>();
 		broadcastsSubs = new ConcurrentHashMap<>();
 		registeredServices = new ConcurrentHashMap<>();
+		//Inserts into each map the Events and broadcasts possible
 		eventsSubs.put(PoseEvent.class, new ConcurrentLinkedQueue<MicroService>());
 		eventsSubs.put(DetectObjectsEvent.class, new ConcurrentLinkedQueue<MicroService>());
 		eventsSubs.put(TrackedObjectsEvent.class, new ConcurrentLinkedQueue<MicroService>());
 		broadcastsSubs.put(TickBroadcast.class, new ConcurrentLinkedQueue<MicroService>());
 		broadcastsSubs.put(TerminatedBroadcast.class, new ConcurrentLinkedQueue<MicroService>());
 		broadcastsSubs.put(CrashedBroadcast.class, new ConcurrentLinkedQueue<MicroService>());
-		lockEventSubs=new Object();
-		lockBroadcastSubs=new Object();
-		lockRegisteredServices=new Object();
-    }
+	}
 
     // Static method to return the instance of MessageBusImpl (singleton)
     public static MessageBusImpl getInstance() {
@@ -65,18 +64,23 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
-		synchronized(lockEventSubs){
-			eventsSubs.computeIfAbsent(type, k -> new ConcurrentLinkedQueue<>()).add(m);
+		ConcurrentLinkedQueue<MicroService> q = eventsSubs.get(type);
+		//Locking the queue of the event we want to add to, so only m can register
+		synchronized(q){
+			q.offer(m);
+			//eventsSubs.computeIfAbsent(type, k -> new ConcurrentLinkedQueue<>()).add(m);
 		}
 	}
 
 	@Override
 	public void subscribeBroadcast(Class<? extends Broadcast> type, MicroService m) {
-		synchronized(lockBroadcastSubs){
-			broadcastsSubs.computeIfAbsent(type, k -> new ConcurrentLinkedQueue<>()).add(m);
+		ConcurrentLinkedQueue<MicroService> q = broadcastsSubs.get(type);
+		//Locking the queue of the event we want to add to, so only m can register
+		synchronized(q){
+			q.offer(m);
+			//q.computeIfAbsent(type, k -> new ConcurrentLinkedQueue<>()).add(m);
 		}
-	}
-
+	} 
 
 	//I used the type of each future to be what i assumed was the fitting one, but i could be wrong.
 	//Need to check if cloudPoint, pose, and landmark are the right classes.
@@ -95,39 +99,42 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void sendBroadcast(Broadcast b) {
-
 		// Gets the queue of microServices that are subscripted to this broadcast type
 		ConcurrentLinkedQueue<MicroService> q = broadcastsSubs.get(b.getClass());
 
 		// If a microService in the queue is not registered, deletes it
 		// Otherwise, adds the message to the microService's queue
-		for(MicroService m : q){
-			if(!(registeredServices.containsKey(m))){
-				q.remove(m);
-			}
-			else{
-				registeredServices.get(m).add(b);
+		synchronized(q){
+			for(MicroService m : q){
+				//Do we need this? Maybe make sure to take them out of subs lists if unregistered
+				/* if(!(registeredServices.containsKey(m))){
+					q.remove(m);
+				}*/
+				ConcurrentLinkedQueue<Message> lst = registeredServices.get(m);
+				synchronized(lst){
+					lst.offer(b);
+				}
 			}
 		}
 	}
 
-	
+	//!!!!!Implement round robin, figure out a way to return the correct future
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
 		// Gets the queue of microServices that are subscripted to this event type
 		ConcurrentLinkedQueue<MicroService> q = eventsSubs.get(e.getClass());
 		// If a microService in the queue is not registered, deletes it
 		// Otherwise, adds the message to the microService's queue
-		for(MicroService m : q){
-			if(!(registeredServices.containsKey(m))){
-				q.remove(m);
+		synchronized(q){
+			//Takes the first of the queue and adds him to the back - thats the chosen Thread
+			MicroService m = q.poll();
+			q.add(m);
+			ConcurrentLinkedQueue<Message> lst = registeredServices.get(m);
+			synchronized(lst){
+				lst.offer(e);
 			}
-			else{
-				registeredServices.get(m).add(e);
-				//return 
-			}
+			lst.notifyAll();
 		}
-
 		// Need to figure out how the change in the event.future is made and return it
 		return null;
 	}
@@ -140,27 +147,27 @@ public class MessageBusImpl implements MessageBus {
 
 	@Override
 	public void unregister(MicroService m) {
-		ConcurrentLinkedQueue q1 = eventsSubs.get(PoseEvent.class);
+		ConcurrentLinkedQueue<MicroService> q1 = eventsSubs.get(PoseEvent.class);
 		synchronized(q1){
 			q1.remove(m);
 		}
-		ConcurrentLinkedQueue q2 = eventsSubs.get(DetectObjectsEvent.class);
+		ConcurrentLinkedQueue<MicroService> q2 = eventsSubs.get(DetectObjectsEvent.class);
 		synchronized(q2){
 			q2.remove(m);
 		}
-		ConcurrentLinkedQueue q3 = eventsSubs.get(TrackedObjectsEvent.class);
+		ConcurrentLinkedQueue<MicroService> q3 = eventsSubs.get(TrackedObjectsEvent.class);
 		synchronized(q3){
 			q3.remove(m);
 		}
-		ConcurrentLinkedQueue q4 = broadcastsSubs.get(TickBroadcast.class);
+		ConcurrentLinkedQueue<MicroService> q4 = broadcastsSubs.get(TickBroadcast.class);
 		synchronized(q4){
 			q4.remove(m);
 		}
-		ConcurrentLinkedQueue q5 = eventsSubs.get(CrashedBroadcast.class);
+		ConcurrentLinkedQueue<MicroService> q5 = eventsSubs.get(CrashedBroadcast.class);
 		synchronized(q5){
 			q5.remove(m);
 		}
-		ConcurrentLinkedQueue q6 = eventsSubs.get(TerminatedBroadcast.class);
+		ConcurrentLinkedQueue<MicroService> q6 = eventsSubs.get(TerminatedBroadcast.class);
 		synchronized(q6){
 			q6.remove(m);
 		}
@@ -170,21 +177,32 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public Message awaitMessage(MicroService m) throws InterruptedException {
 		ConcurrentLinkedQueue<Message> q = registeredServices.get(m);
-		Message mess=null;
+		Message message=null;
 		synchronized(q){
 			try{
 				while(q.isEmpty()){
 					q.wait();
 				}
-				mess = q.remove();
+				message = q.remove();
 				q.notifyAll();
 			}catch(InterruptedException e){
 				Thread.currentThread().interrupt();
 			}
 		}
-		return mess;
+		return message;
 	}
 
-	
+	private <T> Future<?> getFuture (Event<T> e){
+		if(e instanceof DetectObjectsEvent){
+			return ((DetectObjectsEvent)e).getFuture();
+		}
+		else if(e instanceof PoseEvent){
+			return ((PoseEvent)e).getFuture();
+		}
+		else if(e instanceof TrackedObjectsEvent){
+			return ((TrackedObjectsEvent)e).getFuture();
+		}
+		return null;
+	}
 
 }
