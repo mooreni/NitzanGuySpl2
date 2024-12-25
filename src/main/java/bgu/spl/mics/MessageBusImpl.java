@@ -11,8 +11,10 @@ import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrackedObjectsEvent;
 import bgu.spl.mics.application.objects.CloudPoint;
+import bgu.spl.mics.application.objects.DetectedObject;
 import bgu.spl.mics.application.objects.LandMark;
 import bgu.spl.mics.application.objects.Pose;
+import bgu.spl.mics.application.objects.TrackedObject;
 
 
 /*ToDO:
@@ -42,12 +44,15 @@ public class MessageBusImpl implements MessageBus {
 	private ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> broadcastsSubs;
 	// Map that holds the registered services with their queues of messages
 	private ConcurrentHashMap<MicroService, ConcurrentLinkedQueue<Message>> registeredServices;
+	private ConcurrentHashMap<Event<?>, Future<?>> eventsFutures;
+
 
     // Private constructor to prevent instantiation from outside
     private MessageBusImpl() {
         eventsSubs = new ConcurrentHashMap<>();
 		broadcastsSubs = new ConcurrentHashMap<>();
 		registeredServices = new ConcurrentHashMap<>();
+		eventsFutures = new ConcurrentHashMap<>();
 		//Inserts into each map the Events and broadcasts possible
 		eventsSubs.put(PoseEvent.class, new ConcurrentLinkedQueue<MicroService>());
 		eventsSubs.put(DetectObjectsEvent.class, new ConcurrentLinkedQueue<MicroService>());
@@ -86,14 +91,11 @@ public class MessageBusImpl implements MessageBus {
 	//Need to check if cloudPoint, pose, and landmark are the right classes.
 	@Override
 	public <T> void complete(Event<T> e, T result) {
-		if(e instanceof DetectObjectsEvent && result instanceof CloudPoint){
-			((DetectObjectsEvent)e).getFuture().resolve((CloudPoint)result);
-		}
-		else if(e instanceof PoseEvent && result instanceof Pose){
-			((PoseEvent)e).getFuture().resolve((Pose)result);
-		}
-		else if(e instanceof TrackedObjectsEvent && result instanceof LandMark){
-			((TrackedObjectsEvent)e).getFuture().resolve((LandMark)result);
+		synchronized(eventsFutures){
+			// Usafe casting, maybe there's a better idea
+			Future<T> f = (Future<T>)eventsFutures.get(e);
+			f.resolve(result);
+			eventsFutures.remove(e);
 		}
 	}
 
@@ -118,13 +120,11 @@ public class MessageBusImpl implements MessageBus {
 		}
 	}
 
-	//!!!!!Implement round robin, figure out a way to return the correct future
 	@Override
 	public <T> Future<T> sendEvent(Event<T> e) {
-		// Gets the queue of microServices that are subscripted to this event type
-		ConcurrentLinkedQueue<MicroService> q = eventsSubs.get(e.getClass());
-		// If a microService in the queue is not registered, deletes it
-		// Otherwise, adds the message to the microService's queue
+		Future<T> f = new Future<T>();
+		eventsFutures.computeIfAbsent(e, k -> f);	
+		ConcurrentLinkedQueue<MicroService> q = eventsSubs.get(e.getClass()); // Gets the queue of microServices that are subscripted to this event type
 		synchronized(q){
 			//Takes the first of the queue and adds him to the back - thats the chosen Thread
 			MicroService m = q.poll();
@@ -135,8 +135,7 @@ public class MessageBusImpl implements MessageBus {
 			}
 			lst.notifyAll();
 		}
-		// Need to figure out how the change in the event.future is made and return it
-		return null;
+		return f;
 	}
 
 	@Override
@@ -192,7 +191,7 @@ public class MessageBusImpl implements MessageBus {
 		return message;
 	}
 
-	private <T> Future<?> getFuture (Event<T> e){
+	/*private <T> Future<?> getFuture (Event<T> e){
 		if(e instanceof DetectObjectsEvent){
 			return ((DetectObjectsEvent)e).getFuture();
 		}
@@ -203,6 +202,6 @@ public class MessageBusImpl implements MessageBus {
 			return ((TrackedObjectsEvent)e).getFuture();
 		}
 		return null;
-	}
+	}*/
 
 }

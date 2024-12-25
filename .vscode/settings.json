@@ -77,4 +77,5 @@
     ],
     "C_Cpp.default.compilerPath": "/usr/bin/g++",
     "git.enabled": true,
+    "java.configuration.updateBuildConfiguration": "interactive",
 }
