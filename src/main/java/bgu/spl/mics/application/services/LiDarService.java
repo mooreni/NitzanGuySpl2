@@ -6,6 +6,11 @@ import bgu.spl.mics.application.messages.DetectObjectsEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.LiDarWorkerTracker;
+import bgu.spl.mics.application.objects.STATUS;
+
+import java.util.List;
+import java.util.ArrayList;
+
 
 /**
  * LiDarService is responsible for processing data from the LiDAR sensor and
@@ -16,7 +21,9 @@ import bgu.spl.mics.application.objects.LiDarWorkerTracker;
  * observations.
  */
 public class LiDarService extends MicroService {
-    private LiDarWorkerTracker LiDarWorkerTracker;
+    private LiDarWorkerTracker liDarWorkerTracker;
+    private List<DetectObjectsEvent> oldEvents; //Saves up old DetectObject messages it got
+
     /**
      * Constructor for LiDarService.
      *
@@ -24,7 +31,8 @@ public class LiDarService extends MicroService {
      */
     public LiDarService(LiDarWorkerTracker LiDarWorkerTracker) {
         super("LiDarService" + LiDarWorkerTracker.getID());
-        this.LiDarWorkerTracker = LiDarWorkerTracker;
+        this.liDarWorkerTracker = LiDarWorkerTracker;
+        oldEvents = new ArrayList<>();
         // TODO Implement this - do we need to add something else?
     }
 
@@ -36,16 +44,45 @@ public class LiDarService extends MicroService {
     @Override
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
-            //Write what happens when a tick passes
+            if(liDarWorkerTracker.getStatus()==STATUS.ERROR){
+                sendBroadcast(new CrashedBroadcast(getName()));
+                terminate();
+            }
+            else{
+                int currentTick = tickMessage.getTickTime();
+                for(DetectObjectsEvent obj : oldEvents){
+                    //Looks for the event from the relevant time - check if its + or - here
+                    if(obj.getStampedDetectedObjects().getTime() == currentTick-liDarWorkerTracker.getFrequency()){
+                        /*
+                        We need to do several things here.
+                        1. For every event, we need to go over obj.getDetectedObjects() and do ____ with it and the dataBase
+                        2. with the result of this operation, we need to:
+                            a. send a TrackedObjectEvent to fusionSLAM
+                                -SendEvent gets back a future - do we need to do something with it? 
+                            b. save the results into the dataBase
+                            c. save the results into lastTrackedObjects in LiDarWorkerTracker - a field of the last objects that were tracked
+                        3. Complete the event we just solved - the DetectObjectsEvent. We need to do a complete to it
+                        */
+                    }
+                }
+            }        
         });
         subscribeEvent(DetectObjectsEvent.class, detectObjectMessage ->{
-            //Write what happens when an object needs to be detected
+            if(liDarWorkerTracker.getStatus()==STATUS.ERROR){
+                sendBroadcast(new CrashedBroadcast(getName()));
+                terminate();
+            }
+            else{
+                oldEvents.add(detectObjectMessage);
+            }
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
-            //Write what happens when an object it's subscribed to terminates
+            //If the service that terminates was the time service, terminate too
+            if(terminateMessage.getSenderName().compareTo("TimeService") ==0){
+                sendBroadcast(new TerminatedBroadcast(getName()));
+                terminate();
+            }
         });
-        subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
-            terminate();
-        });    
+        subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());    
     }
 }

@@ -1,8 +1,10 @@
 package bgu.spl.mics.application.objects;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import bgu.spl.mics.application.messages.DetectObjectsEvent;
 import bgu.spl.mics.application.services.LiDarService;
 
 
@@ -59,6 +61,7 @@ public class LiDarWorkerTracker {
     public List<TrackedObject> getLastTrackedObjects(){
         return lastTrackedObjects;
     }
+
 
     public LiDarService getLiDarService(){
         return liDarService;
