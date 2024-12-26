@@ -1,6 +1,5 @@
 package bgu.spl.mics;
 
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -10,11 +9,6 @@ import bgu.spl.mics.application.messages.PoseEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrackedObjectsEvent;
-import bgu.spl.mics.application.objects.CloudPoint;
-import bgu.spl.mics.application.objects.DetectedObject;
-import bgu.spl.mics.application.objects.LandMark;
-import bgu.spl.mics.application.objects.Pose;
-import bgu.spl.mics.application.objects.TrackedObject;
 
 
 /*ToDO:
@@ -92,9 +86,10 @@ public class MessageBusImpl implements MessageBus {
 	@Override
 	public <T> void complete(Event<T> e, T result) {
 		synchronized(eventsFutures){
-			// Usafe casting, maybe there's a better idea
+			// Unsafe casting, maybe there's a better idea
 			Future<T> f = (Future<T>)eventsFutures.get(e);
 			f.resolve(result);
+			f.notifyAll();
 			eventsFutures.remove(e);
 		}
 	}
@@ -128,12 +123,18 @@ public class MessageBusImpl implements MessageBus {
 		synchronized(q){
 			//Takes the first of the queue and adds him to the back - thats the chosen Thread
 			MicroService m = q.poll();
-			q.add(m);
-			ConcurrentLinkedQueue<Message> lst = registeredServices.get(m);
-			synchronized(lst){
-				lst.offer(e);
+			if(m==null){
+				return null;
 			}
-			lst.notifyAll();
+			else{
+				q.add(m);
+				ConcurrentLinkedQueue<Message> lst = registeredServices.get(m);
+				synchronized(lst){
+					lst.offer(e);
+				}
+				lst.notifyAll();
+			}
+			
 		}
 		return f;
 	}

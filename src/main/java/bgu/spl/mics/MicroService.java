@@ -1,9 +1,14 @@
 package bgu.spl.mics;
 
-import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+
+
+
+/* We need to further understand:
+   1. InterruptedExeption, what should we do in that case
+   2. Exeptions in general, the compiler commands to use it but page 4 says we can't
+ * 
+ */
 
 /**
  * The MicroService is an abstract class that any micro-service in the system
@@ -32,8 +37,7 @@ public abstract class MicroService implements Runnable {
     // Holds the messageBus singleton
     private MessageBusImpl msgBus = MessageBusImpl.getInstance();
     // Maps that hold the pairs of messages and their callbacks
-    private ConcurrentHashMap<Class<? extends Event<?>>, Callback> eventsCalls;
-	private ConcurrentHashMap<Class<? extends Broadcast>, Callback> broadcastsCalls;
+	private ConcurrentHashMap<Class<? extends Message>, Callback<?>> messageCallbacks;
 
     /**
      * @param name the micro-service name (used mainly for debugging purposes -
@@ -41,8 +45,7 @@ public abstract class MicroService implements Runnable {
      */
     public MicroService(String name) {
         this.name = name;
-        eventsCalls = new ConcurrentHashMap<>();
-        broadcastsCalls = new ConcurrentHashMap<>();
+        messageCallbacks = new ConcurrentHashMap<>();
     }
 
     /**
@@ -68,8 +71,7 @@ public abstract class MicroService implements Runnable {
      */
     protected final <T, E extends Event<T>> void subscribeEvent(Class<E> type, Callback<E> callback) {
         msgBus.subscribeEvent(type, this);
-        eventsCalls.computeIfAbsent(type, k -> callback);
-        return T; // What is T? maybe a Future
+        messageCallbacks.computeIfAbsent(type, k -> callback);
     }
 
     /**
@@ -94,7 +96,7 @@ public abstract class MicroService implements Runnable {
      */
     protected final <B extends Broadcast> void subscribeBroadcast(Class<B> type, Callback<B> callback) {
         msgBus.subscribeBroadcast(type, this);
-        broadcastsCalls.computeIfAbsent(type, k -> callback);
+        messageCallbacks.computeIfAbsent(type, k -> callback);
     }
     
     /**
@@ -110,8 +112,7 @@ public abstract class MicroService implements Runnable {
      * 	       			null in case no micro-service has subscribed to {@code e.getClass()}.
      */
     protected final <T> Future<T> sendEvent(Event<T> e) {
-        //TODO: implement this.
-        return null; //TODO: delete this line :)
+        return msgBus.sendEvent(e);
     }
 
     /**
@@ -121,7 +122,7 @@ public abstract class MicroService implements Runnable {
      * @param b The broadcast message to send
      */
     protected final void sendBroadcast(Broadcast b) {
-        //TODO: implement this.
+        msgBus.sendBroadcast(b);
     }
 
     /**
@@ -135,7 +136,7 @@ public abstract class MicroService implements Runnable {
      *               {@code e}.
      */
     protected final <T> void complete(Event<T> e, T result) {
-        //TODO: implement this.
+        msgBus.complete(e, result);
     }
 
     /**
@@ -165,10 +166,15 @@ public abstract class MicroService implements Runnable {
      */
     @Override
     public final void run() {
-        initialize();
-        while (!terminated) {
-            System.out.println("NOT IMPLEMENTED!!!"); //TODO: you should delete this line :)
+        try {
+            initialize();
+            while (!terminated) {
+                Message m = msgBus.awaitMessage(this);
+                Callback<Message> c = (Callback<Message>)messageCallbacks.get(m.getClass());
+                c.call(m);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
-
 }
