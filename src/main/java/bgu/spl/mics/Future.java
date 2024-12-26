@@ -38,10 +38,16 @@ public class Future<T> {
      * @return return the result of type T if it is available, if not wait until it is available.
      * 	       
      */
-	public synchronized T get() {
-		while (!isDone) {
+	public T get() {
+		try{
+			while (!isDone) {
+				wait();
+			}
+			return result;
+		}catch(InterruptedException e){
+			Thread.currentThread().interrupt();
+			return null;
 		}
-		return result;
 	}
 	
 	/**
@@ -70,7 +76,7 @@ public class Future<T> {
      * 	       wait for {@code timeout} TimeUnits {@code unit}. If time has
      *         elapsed, return null.
      */
-	public synchronized T get(long timeout, TimeUnit unit) {
+	public T get(long timeout, TimeUnit unit) {
 		long timeOut = unit.toNanos(timeout); // Convert timeout to nanoseconds
 		long endTime = System.nanoTime() + timeOut; // Calculate the time when the timeout will occur
 	

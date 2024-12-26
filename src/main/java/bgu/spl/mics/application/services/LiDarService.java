@@ -1,6 +1,10 @@
 package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.CrashedBroadcast;
+import bgu.spl.mics.application.messages.DetectObjectsEvent;
+import bgu.spl.mics.application.messages.TerminatedBroadcast;
+import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.LiDarWorkerTracker;
 
 /**
@@ -12,15 +16,16 @@ import bgu.spl.mics.application.objects.LiDarWorkerTracker;
  * observations.
  */
 public class LiDarService extends MicroService {
-
+    private LiDarWorkerTracker LiDarWorkerTracker;
     /**
      * Constructor for LiDarService.
      *
      * @param LiDarWorkerTracker A LiDAR Tracker worker object that this service will use to process data.
      */
     public LiDarService(LiDarWorkerTracker LiDarWorkerTracker) {
-        super("Change_This_Name");
-        // TODO Implement this
+        super("LiDarService" + LiDarWorkerTracker.getID());
+        this.LiDarWorkerTracker = LiDarWorkerTracker;
+        // TODO Implement this - do we need to add something else?
     }
 
     /**
@@ -30,6 +35,17 @@ public class LiDarService extends MicroService {
      */
     @Override
     protected void initialize() {
-        // TODO Implement this
+        subscribeBroadcast(TickBroadcast.class, tickMessage ->{
+            //Write what happens when a tick passes
+        });
+        subscribeEvent(DetectObjectsEvent.class, detectObjectMessage ->{
+            //Write what happens when an object needs to be detected
+        });
+        subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
+            //Write what happens when an object it's subscribed to terminates
+        });
+        subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
+            terminate();
+        });    
     }
 }

@@ -9,9 +9,9 @@ import bgu.spl.mics.application.messages.TickBroadcast;
  */
 public class TimeService extends MicroService {
 
-    int tickTime;
-    int duration;
-    int currentTick;
+    private int tickTime;
+    private int duration;
+    private int currentTick;
     /**
      * Constructor for TimeService.
      *
@@ -31,9 +31,18 @@ public class TimeService extends MicroService {
      */
     @Override
     protected void initialize() {
-        while(currentTick <= duration){
-            sendBroadcast(new TickBroadcast(currentTick));
-            currentTick++;
+        try{
+            //While we didnt reach the number of ticks needed, we send broadcasts 
+            while(currentTick <= duration){
+                sendBroadcast(new TickBroadcast(currentTick));
+                currentTick++;
+                this.wait(tickTime);
+            }
+            //Will go out into the run function in MicroService, where we broadCast termination
+            terminate(); 
+        }catch(InterruptedException e){
+            Thread.currentThread().interrupt();
         }
+
     }
 }
