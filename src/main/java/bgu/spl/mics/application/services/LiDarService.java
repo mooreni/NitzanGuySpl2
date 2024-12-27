@@ -56,6 +56,7 @@ public class LiDarService extends MicroService {
                         /*
                         We need to do several things here.
                         1. For every event, we need to go over obj.getDetectedObjects() and do ____ with it and the dataBase
+                            a. the database should be read from a lidar_data.json file thats given to us, like in the examples folder
                         2. with the result of this operation, we need to:
                             a. send a TrackedObjectEvent to fusionSLAM
                                 -SendEvent gets back a future - do we need to do something with it? 
