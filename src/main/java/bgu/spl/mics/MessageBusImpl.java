@@ -30,9 +30,11 @@ import bgu.spl.mics.application.messages.TrackedObjectsEvent;
  * All other methods and members you add the class must be private.
  */
 public class MessageBusImpl implements MessageBus {
+	private static class MessageBusImplHolder {
+		private static volatile MessageBusImpl instance = new MessageBusImpl();
+	}
 	// Added fields:
 	// The single instance of the MessageBusImpl class
-    private static final MessageBusImpl instance = new MessageBusImpl();
 	// Maps that hold the subscriptions of the services to each message
 	private ConcurrentHashMap<Class<? extends Event<?>>, ConcurrentLinkedQueue<MicroService>> eventsSubs;
 	private ConcurrentHashMap<Class<? extends Broadcast>, ConcurrentLinkedQueue<MicroService>> broadcastsSubs;
@@ -58,7 +60,7 @@ public class MessageBusImpl implements MessageBus {
 
     // Static method to return the instance of MessageBusImpl (singleton)
     public static MessageBusImpl getInstance() {
-        return instance;
+        return MessageBusImplHolder.instance;
     }
 
 	@Override
@@ -179,14 +181,14 @@ public class MessageBusImpl implements MessageBus {
 		ConcurrentLinkedQueue<Message> q = registeredServices.get(m);
 		Message message=null;
 		synchronized(q){
-			try{
-				while(q.isEmpty()){
+			while(q.isEmpty()){
+				try{
 					q.wait();
+					message = q.remove();
+					q.notifyAll();
+				}catch(InterruptedException e){
+					Thread.currentThread().interrupt();
 				}
-				message = q.remove();
-				q.notifyAll();
-			}catch(InterruptedException e){
-				Thread.currentThread().interrupt();
 			}
 		}
 		return message;

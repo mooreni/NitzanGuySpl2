@@ -10,7 +10,7 @@ import java.util.List;
 public class StampedCloudPoints {
     private String id;
     private int time;
-    private List<CloudPoint> cloudPoints; //Is it supposed to be a list of list of doubles? page 17
+    private List<List<Double>> cloudPoints; //Is it supposed to be a list of list of doubles? page 17
 
     public StampedCloudPoints(String id, int time){
         this.id=id;
@@ -18,7 +18,7 @@ public class StampedCloudPoints {
         this.cloudPoints=new ArrayList<>();
     }
 
-    public StampedCloudPoints(String id, int time, List<CloudPoint> cloudPoints){
+    public StampedCloudPoints(String id, int time, List<List<Double>> cloudPoints){
         this.id=id;
         this.time=time;
         this.cloudPoints=cloudPoints;
@@ -32,7 +32,12 @@ public class StampedCloudPoints {
         return time;
     }
 
-    public List<CloudPoint> getCoudPoints(){
-        return cloudPoints;
+    public List<CloudPoint> getCloudPoints(){
+        List<CloudPoint> pointsObjects = new ArrayList<>();
+        for(List<Double> point : cloudPoints){
+            CloudPoint pointObject = new CloudPoint(point.get(0), point.get(1));
+            pointsObjects.add(pointObject);
+        }
+        return pointsObjects;
     }
 }

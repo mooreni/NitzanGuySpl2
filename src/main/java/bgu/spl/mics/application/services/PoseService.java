@@ -1,8 +1,16 @@
 package bgu.spl.mics.application.services;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.messages.CrashedBroadcast;
+import bgu.spl.mics.application.messages.PoseEvent;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.GPSIMU;
+import bgu.spl.mics.application.objects.STATUS;
+import bgu.spl.mics.application.objects.*;
 
 /**
  * PoseService is responsible for maintaining the robot's current pose (position and orientation)
@@ -28,7 +36,16 @@ public class PoseService extends MicroService {
     @Override
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
-            //Write what happens when a tick passes
+           if(gpsimu.getStatus()==STATUS.ERROR){
+                sendBroadcast(new CrashedBroadcast(getName()));
+                terminate();
+            }
+            else{
+                int currentTick = tickMessage.getTickTime();
+                List<Pose> poseList = gpsimu.getPoseList();
+                sendEvent(new PoseEvent(getName(), poseList.get(currentTick-1), currentTick));
+            }
         });
+        subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());
     }
 }

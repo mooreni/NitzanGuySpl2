@@ -31,18 +31,17 @@ public class TimeService extends MicroService {
      */
     @Override
     protected void initialize() {
-        try{
-            //While we didnt reach the number of ticks needed, we send broadcasts 
-            while(currentTick <= duration){
+        //While we didnt reach the number of ticks needed, we send broadcasts 
+        while(currentTick <= duration){
+            try{
                 sendBroadcast(new TickBroadcast(currentTick));
-                currentTick++;
+                currentTick = currentTick + tickTime;
                 this.wait(tickTime);
-            }
-            //Will go out into the run function in MicroService, where we broadCast termination
-            terminate(); 
-        }catch(InterruptedException e){
+                //Will go out into the run function in MicroService, where we broadCast termination
+                terminate(); 
+            }catch(InterruptedException e){
             Thread.currentThread().interrupt();
+            }
         }
-
     }
 }

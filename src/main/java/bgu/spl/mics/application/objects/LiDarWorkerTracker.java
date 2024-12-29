@@ -62,6 +62,11 @@ public class LiDarWorkerTracker {
         return lastTrackedObjects;
     }
 
+    public void setLastTrackedObjects(List<TrackedObject> trackedObjects){
+        this.lastTrackedObjects = trackedObjects;
+    }
+
+
 
     public LiDarService getLiDarService(){
         return liDarService;

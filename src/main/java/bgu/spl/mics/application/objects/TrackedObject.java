@@ -40,7 +40,7 @@ public class TrackedObject {
         return description;
     }
 
-    public List<CloudPoint> getCoudCoordinates(){
+    public List<CloudPoint> getCloudCoordinates(){
         return coordinates;
     }
 }

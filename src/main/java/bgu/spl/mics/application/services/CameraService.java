@@ -45,7 +45,7 @@ public class CameraService extends MicroService {
                 int currentTick = tickMessage.getTickTime();
                 for(StampedDetectedObjects obj : camera.getStampedDetectedObjects()){
                     //If there is data from time T, we will send it when we get to T+Frequency - Check that!!
-                    if(obj.getTime() == currentTick-camera.getFrequency()){
+                    if(obj.getTime() == currentTick+camera.getFrequency()){
                         //Send event gets back a future - do we need to do something with it?
                         sendEvent(new DetectObjectsEvent(getName(), obj, currentTick));
                     }
