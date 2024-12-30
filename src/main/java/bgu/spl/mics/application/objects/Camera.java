@@ -15,6 +15,7 @@ public class Camera {
     private int frequency;
     private STATUS status;
     private List<StampedDetectedObjects> stampedDetectedObjects;
+
     //I think these field makes sense to have for each camera?
     private CameraService cameraService;
     private Thread thread;

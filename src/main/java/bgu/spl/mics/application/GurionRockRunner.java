@@ -1,7 +1,11 @@
 package bgu.spl.mics.application;
 
+import java.util.List;
+
 import bgu.spl.mics.MessageBusImpl;
 import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.objects.LiDarDataBase;
+import bgu.spl.mics.application.objects.StampedCloudPoints;
 import bgu.spl.mics.application.services.TimeService;
 
 /**
@@ -22,8 +26,14 @@ public class GurionRockRunner {
      */
     public static void main(String[] args) {
         System.out.println("Hello World!");
-        MessageBusImpl bus = MessageBusImpl.getInstance();
-        bus.subscribeBroadcast(TickBroadcast.class, new TimeService(500, 3));
+        List<StampedCloudPoints> list = LiDarDataBase.getInstance("/root/NitzanGuySpl2/example input/lidar_data.json").getStampedCloudPoints();
+        for(StampedCloudPoints point : list){
+            System.out.println(point.getId());
+            System.out.println(point.getTime());
+            System.out.println(point.getCloudPoints());
+        }
+        //MessageBusImpl bus = MessageBusImpl.getInstance();
+        //bus.subscribeBroadcast(TickBroadcast.class, new TimeService(500, 3));
 
         // TODO: Parse configuration file.
         // TODO: Initialize system components and services.
@@ -54,6 +64,8 @@ public class GurionRockRunner {
     ===============================
     LiDarService: started working. Lines 57-64 need to have the whole handling of the DetectObjectEvent.
                                                                         Unsure what goes on with the dataBase there.
+                                                                        Line 63: check if its + or - here: page 15
+                                                                        line 63: is it <= or ==?               
     ===============================
     FusionSlamService: Didnt touch, only added the relevent registers
     PoseService: Didnt touch, only added the relevent registers

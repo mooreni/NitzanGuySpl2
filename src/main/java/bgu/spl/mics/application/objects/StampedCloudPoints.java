@@ -24,7 +24,7 @@ public class StampedCloudPoints {
         this.cloudPoints=cloudPoints;
     }
 
-    public String getID(){
+    public String getId(){
         return id;
     }
 
@@ -32,12 +32,15 @@ public class StampedCloudPoints {
         return time;
     }
 
-    public List<CloudPoint> getCloudPoints(){
+    public List<List<Double>> getCloudPoints(){
+        return cloudPoints;
+        /*
         List<CloudPoint> pointsObjects = new ArrayList<>();
         for(List<Double> point : cloudPoints){
             CloudPoint pointObject = new CloudPoint(point.get(0), point.get(1));
             pointsObjects.add(pointObject);
         }
         return pointsObjects;
+        */
     }
 }

@@ -7,9 +7,8 @@ import java.util.ListIterator;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
+import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
-import bgu.spl.mics.application.objects.GPSIMU;
-import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.*;
 
 /**
@@ -44,6 +43,13 @@ public class PoseService extends MicroService {
                 int currentTick = tickMessage.getTickTime();
                 List<Pose> poseList = gpsimu.getPoseList();
                 sendEvent(new PoseEvent(getName(), poseList.get(currentTick-1), currentTick));
+            }
+        });
+        subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
+            //If the service that terminates was the time service, terminate too
+            if(terminateMessage.getSenderName().compareTo("TimeService") ==0){
+                sendBroadcast(new TerminatedBroadcast(getName()));
+                terminate();
             }
         });
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());

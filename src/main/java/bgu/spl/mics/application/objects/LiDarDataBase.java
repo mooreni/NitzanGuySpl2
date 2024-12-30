@@ -1,6 +1,11 @@
 package bgu.spl.mics.application.objects;
 
 import java.util.ArrayList;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.io.FileReader;
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -12,7 +17,7 @@ public class LiDarDataBase {
 		private static volatile LiDarDataBase instance = new LiDarDataBase();
 	}
 
-    private List<StampedCloudPoints> cloudPoints;
+    private static List<StampedCloudPoints> cloudPoints;
     /**
      * Returns the singleton instance of LiDarDataBase.
      *
@@ -25,12 +30,23 @@ public class LiDarDataBase {
     }
 
     private static void LoadData(String filePath){
-        // Should load the lidar data file and extract the cloud points to the list
+        Gson gson = new Gson();
+        try (FileReader reader = new FileReader(filePath)) {
+            // Define the type for the list
+            Type stampedCloudPointType = new TypeToken<List<StampedCloudPoints>>(){}.getType();
+
+            // Deserialize JSON to list of cloudpoints
+            cloudPoints = gson.fromJson(reader,stampedCloudPointType);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+        // Should load the lidar data file and extract the cloud points to the list
 
     public static LiDarDataBase getInstance(String filePath) {
+        LiDarDataBase.LoadData(filePath);
         LiDarDataBase instance = LiDARDataBaseHolder.instance;
-        instance.LoadData(filePath);
         return instance;
     }
 
@@ -43,7 +59,11 @@ public class LiDarDataBase {
         return cloudPoints;
     } 
 
-    public List<CloudPoint> searchCoordinates(DetectedObject obj){ // Should return the object's coordinates
-        return null;
+    public List<CloudPoint> searchCoordinates(DetectedObject obj, int time){ // Should return the object's coordinates
+        List<CloudPoint> coordinates = new ArrayList<CloudPoint>();
+        for(int i=0;i<time;i++){
+            if()
+        }
+        return coordinates;
     }
 }
