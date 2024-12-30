@@ -1,14 +1,12 @@
 package bgu.spl.mics.application.messages;
 
-import java.util.List;
 
 import bgu.spl.mics.Event;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
-import bgu.spl.mics.application.objects.TrackedObject;
 
 
 //From Camera to LiDar worker
-public class DetectObjectsEvent implements Event<List<TrackedObject>> {
+public class DetectObjectsEvent implements Event<Boolean> {
     private String senderName; //Which camera sent the event
     private StampedDetectedObjects stampedDetectedObjects; //Which object needs to be detected
     private int tickTime; //time the event was sent

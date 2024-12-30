@@ -4,7 +4,7 @@ import bgu.spl.mics.Event;
 import bgu.spl.mics.application.objects.Pose;
 
 //From PoseService to Fusion-SLAM
-public class PoseEvent implements Event<Pose>{
+public class PoseEvent implements Event<Boolean>{
     private String senderName; //Which LiDar worker sent the event
     private Pose pose; //Current Pose
     private int tickTime; //<==============do we need this?

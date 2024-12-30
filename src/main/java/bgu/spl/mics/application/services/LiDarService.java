@@ -93,9 +93,7 @@ public class LiDarService extends MicroService {
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
             //If the service that terminates was the time service, terminate too
-            if(terminateMessage.getSenderName().compareTo("TimeService") ==0){
                 terminate();
-            }
         });
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());    
     }
@@ -116,7 +114,7 @@ public class LiDarService extends MicroService {
                     trackedObjects.add(trackedObject);
                 }
                 //Completes the event the camera sent
-                complete(currentEvent, trackedObjects);
+                complete(currentEvent, true);
             }
         }
         //removes processed events

@@ -6,7 +6,7 @@ import java.util.List;
 
 //From LiDar to Fusion-SLAM
 //Page 19 - is it tracked object or list of tracked objects?
-public class TrackedObjectsEvent implements Event<List<TrackedObject>> {
+public class TrackedObjectsEvent implements Event<Boolean> {
     private String senderName; //Which camera sent the event
     private List<TrackedObject> trackedObject; //Which object needs to be detected
     private int tickTime; //<==============do we need this?

@@ -1,12 +1,20 @@
 package bgu.spl.mics.application.services;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrackedObjectsEvent;
+import bgu.spl.mics.application.objects.CloudPoint;
 import bgu.spl.mics.application.objects.FusionSlam;
+import bgu.spl.mics.application.objects.Pose;
+import bgu.spl.mics.application.objects.TrackedObject;
+import bgu.spl.mics.application.objects.LandMark;
 
 /**
  * FusionSlamService integrates data from multiple sensors to build and update
@@ -22,11 +30,13 @@ public class FusionSlamService extends MicroService {
      *
      * @param fusionSlam The FusionSLAM object responsible for managing the global map.
      */
-    public FusionSlamService(FusionSlam fusionSlam) {
+    public FusionSlamService() {
         super("FusionSlam");
-        this.fusionSlam = fusionSlam;
+        this.fusionSlam = FusionSlam.getInstance();
         // TODO Implement this - do we need to add something else?
     }
+
+    
 
     /**
      * Initializes the FusionSlamService.
@@ -36,16 +46,41 @@ public class FusionSlamService extends MicroService {
     @Override
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
-            //Write what happens when a tick passes
+           
+
         });
         subscribeEvent(TrackedObjectsEvent.class, trackedObjectMessage ->{
-            //Write what happens when an object is tracked
+            List<TrackedObject> trackedObjects = trackedObjectMessage.getTrackedObject();
+            for(TrackedObject trackedObject : trackedObjects){
+                List<CloudPoint> cloudPoints = trackedObject.getCloudCoordinates();
+                List<CloudPoint> transformedCloudPoints = new ArrayList<>();
+                for(CloudPoint cloudPoint : cloudPoints){
+                    Pose pose = fusionSlam.getPreviousRobotPoses().get(trackedObject.getTime());
+                    transformedCloudPoints.add(fusionSlam.calculateCoordinates(pose, cloudPoint));
+                }
+                Iterator<LandMark> landMarkIterator = fusionSlam.getGlobalMap().iterator();
+                boolean exists = false;
+                LandMark newLandMark = new LandMark(trackedObject.getID(), trackedObject.getDescription(), transformedCloudPoints);
+                LandMark landMark = landMarkIterator.next();
+                while(landMarkIterator.hasNext()&&!exists){
+                    if(landMark.getId().equals(newLandMark.getId())){
+                        newLandMark.setCloudPoints(fusionSlam.averageCloudPoints(landMark.getCloudPoints(), transformedCloudPoints));  
+                    }
+                    else{
+                        landMark = landMarkIterator.next();
+                    }
+                }
+                fusionSlam.updateGlobalMap(newLandMark);
+            }
+            complete(trackedObjectMessage, true);
         });
         subscribeEvent(PoseEvent.class, poseMessage ->{
-            //Write what happens when recieves pose message
+            Pose pose = poseMessage.getPose();
+            fusionSlam.updatePreviousRobotPoses(pose);
+            complete(poseMessage, true);
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
-            //Write what happens when an object it's subscribed to terminates
+            terminate();
         });
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
             terminate();

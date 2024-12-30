@@ -2,6 +2,7 @@ package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.messages.TerminatedBroadcast;
 
 /**
  * TimeService acts as the global timer for the system, broadcasting TickBroadcast messages
@@ -35,13 +36,15 @@ public class TimeService extends MicroService {
         while(currentTick <= duration){
             try{
                 sendBroadcast(new TickBroadcast(currentTick));
-                currentTick = currentTick + tickTime;
-                this.wait(tickTime);
+                currentTick = currentTick++;
+                Thread.sleep(tickTime);
                 //Will go out into the run function in MicroService, where we broadCast termination
-                terminate(); 
+                 
             }catch(InterruptedException e){
             Thread.currentThread().interrupt();
             }
         }
+        terminate();
+        sendBroadcast(new TerminatedBroadcast(getName()));
     }
 }

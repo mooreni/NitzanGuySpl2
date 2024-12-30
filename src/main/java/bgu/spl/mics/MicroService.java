@@ -180,7 +180,6 @@ public abstract class MicroService implements Runnable {
                 Thread.currentThread().interrupt();
             }
         }
-        sendBroadcast(new TerminatedBroadcast(getName()));
         msgBus.unregister(this);
     }
 }
