@@ -3,6 +3,13 @@ package bgu.spl.mics.application.objects;
 import bgu.spl.mics.application.services.CameraService;
 
 import java.util.List;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 /**
@@ -20,23 +27,24 @@ public class Camera {
     private Thread thread;
 
     //Partial one - might be the only one needed
-    public Camera (int id, int frequency){
+    public Camera (int id, int frequency, String filePath){
         this.id=id;
         this.frequency=frequency;
         this.status=STATUS.UP;
         this.stampedDetectedObjects = new ArrayList<StampedDetectedObjects>();
+        loadData(filePath);
         //I think thats how its meant to be done
         this.cameraService= new CameraService(this);
         this.thread = new Thread(cameraService);
         thread.start();
     }
 
-    //Full constructor - all fields
-    public Camera (int id, int frequency, STATUS status, List<StampedDetectedObjects> stampedDetectedObjects){
+    //Full constructor - with status
+    public Camera (int id, int frequency, String filePath, STATUS status){
         this.id=id;
         this.frequency=frequency;
         this.status=status;
-        this.stampedDetectedObjects=stampedDetectedObjects;
+        loadData(filePath);
         //I think thats how its meant to be done
         this.cameraService= new CameraService(this);
         this.thread = new Thread(cameraService);
@@ -61,5 +69,19 @@ public class Camera {
 
     public CameraService getCameraService(){
         return cameraService;
+    }
+
+    private void loadData(String filePath){
+        Gson gson = new Gson();
+        try (FileReader reader = new FileReader(filePath)) {
+            // Define the type for the list
+            Type detectedType = new TypeToken<List<StampedDetectedObjects>>(){}.getType();
+
+            // Deserialize JSON to list of cloudpoints
+            stampedDetectedObjects = gson.fromJson(reader,detectedType);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

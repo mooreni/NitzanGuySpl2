@@ -34,13 +34,15 @@ public class StampedCloudPoints {
 
     public List<List<Double>> getCloudPoints(){
         return cloudPoints;
-        /*
+
+    }
+
+    public List<CloudPoint> getCloudPointsAsObj(){
         List<CloudPoint> pointsObjects = new ArrayList<>();
         for(List<Double> point : cloudPoints){
             CloudPoint pointObject = new CloudPoint(point.get(0), point.get(1));
             pointsObjects.add(pointObject);
         }
         return pointsObjects;
-        */
     }
 }

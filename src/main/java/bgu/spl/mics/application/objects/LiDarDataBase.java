@@ -61,8 +61,10 @@ public class LiDarDataBase {
 
     public List<CloudPoint> searchCoordinates(DetectedObject obj, int time){ // Should return the object's coordinates
         List<CloudPoint> coordinates = new ArrayList<CloudPoint>();
-        for(int i=0;i<time;i++){
-            if()
+        for(StampedCloudPoints stampedCloudPoints : cloudPoints){
+            if(stampedCloudPoints.getTime() == time && stampedCloudPoints.getId().compareTo(obj.getID()) == 0){
+                coordinates = stampedCloudPoints.getCloudPointsAsObj();
+            }
         }
         return coordinates;
     }
