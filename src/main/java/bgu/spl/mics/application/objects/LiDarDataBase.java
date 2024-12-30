@@ -29,7 +29,7 @@ public class LiDarDataBase {
         cloudPoints = new ArrayList<StampedCloudPoints>();
     }
 
-    private static void LoadData(String filePath){
+    private void LoadData(String filePath){
         Gson gson = new Gson();
         try (FileReader reader = new FileReader(filePath)) {
             // Define the type for the list
@@ -45,8 +45,8 @@ public class LiDarDataBase {
         // Should load the lidar data file and extract the cloud points to the list
 
     public static LiDarDataBase getInstance(String filePath) {
-        LiDarDataBase.LoadData(filePath);
         LiDarDataBase instance = LiDARDataBaseHolder.instance;
+        instance.LoadData(filePath);
         return instance;
     }
 

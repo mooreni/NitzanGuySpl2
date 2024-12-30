@@ -18,7 +18,7 @@ import bgu.spl.mics.application.objects.StampedDetectedObjects;
  */
 public class CameraService extends MicroService {
     private Camera camera;
-
+    private int currentTick;
     /**
      * Constructor for CameraService.
      *
@@ -27,6 +27,7 @@ public class CameraService extends MicroService {
     public CameraService(Camera camera) {
         super("CameraService" + camera.getID());
         this.camera = camera;
+        currentTick=0;
         // TODO Implement this - do we need to add something else?
     }
 
@@ -43,7 +44,7 @@ public class CameraService extends MicroService {
                 terminate();
             }
             else{
-                int currentTick = tickMessage.getTickTime();
+                currentTick = tickMessage.getTickTime();
                 for(StampedDetectedObjects obj : camera.getStampedDetectedObjects()){
                     //If there is data from time T, we will send it when we get to T+Frequency - Check that!!
                     if(obj.getDetectionTime()+camera.getFrequency() == currentTick){

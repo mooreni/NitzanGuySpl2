@@ -28,7 +28,7 @@ import java.util.ArrayList;
 public class LiDarService extends MicroService {
     private LiDarWorkerTracker liDarWorkerTracker;
     private List<DetectObjectsEvent> oldEvents; //Saves up old DetectObject messages it got
-    private int nextToProcess = 0; //The next event to process
+    private int currentTick;
     private LiDarDataBase liDarDataBase = LiDarDataBase.getInstance(); 
     /**
      * Constructor for LiDarService.
@@ -39,6 +39,7 @@ public class LiDarService extends MicroService {
         super("LiDarService" + LiDarWorkerTracker.getID());
         this.liDarWorkerTracker = LiDarWorkerTracker;
         oldEvents = new ArrayList<>();
+        currentTick = 0;
         // TODO Implement this - do we need to add something else?
     }
 
@@ -55,8 +56,12 @@ public class LiDarService extends MicroService {
                 terminate();
             }
             else{
-                int currentTick = tickMessage.getTickTime();
-                List<TrackedObject> trackedObjects = trackObjects(currentTick);
+                currentTick = tickMessage.getTickTime();
+                List<TrackedObject> trackedObjects = trackObjects();
+                if(trackedObjects.size() > 0){
+                    liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
+                    sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
+                }
                 /*
                 We need to do several things here.
                 1. For every event, we need to go over obj.getDetectedObjects() and do ____ with it and the dataBase
@@ -65,11 +70,10 @@ public class LiDarService extends MicroService {
                     a. send a TrackedObjectEvent to fusionSLAM
                         -SendEvent gets back a future - do we need to do something with it?
                     b. save the results into lastTrackedObjects in LiDarWorkerTracker - a field of the last objects that were tracked
+                3. Complete the event we just solved - the WDetectObjectsEvent. We need to do a complete to it
                 ///////// DONE UNTIL HERE ///////// 
-                    c. save the results into the dataBase - ?
-                3. Complete the event we just solved - the DetectObjectsEvent. We need to do a complete to it
+                c. save the results into the dataBase - ?
                 */
-                sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
             }        
         });
         subscribeEvent(DetectObjectsEvent.class, detectObjectMessage ->{
@@ -79,6 +83,12 @@ public class LiDarService extends MicroService {
             }
             else{
                 oldEvents.add(detectObjectMessage);
+                //Checks if the new event already got processed and send it further
+                List<TrackedObject> trackedObjects = trackObjects();
+                if(trackedObjects.size() > 0){
+                    liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
+                    sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
+                }
             }
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
@@ -91,24 +101,31 @@ public class LiDarService extends MicroService {
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());    
     }
 
-    private List<TrackedObject> trackObjects(int currentTick){
+    //Goes over all events and completes the relevant ones
+    private List<TrackedObject> trackObjects(){
         List<TrackedObject> trackedObjects = new ArrayList<>();
-        //For every event the camera sent, we check if it needs to be processed
-        for(int i = nextToProcess; i<oldEvents.size();i++){
-            DetectObjectsEvent objEvent = oldEvents.get(i);
-            StampedDetectedObjects stampedDetectedObjects = objEvent.getStampedDetectedObjects();
-            //Looks for the event from the relevant time - check if its + or - here: page 15
+
+        //For every event the camera sent, we check if it needs to be processed based on the currentTick
+        for(DetectObjectsEvent currentEvent : oldEvents){
+            StampedDetectedObjects stampedDetectedObjects = currentEvent.getStampedDetectedObjects();
+            //Checks if the event we process is relevant to our tick - check if its + or - here: page 15
             if(stampedDetectedObjects.getDetectionTime()+liDarWorkerTracker.getFrequency() <= currentTick){
+                //For every object in the event, we create a TrackedObject and add it to the list
                 for(DetectedObject detectedObject : stampedDetectedObjects.getDetectedObjects()){
                     TrackedObject trackedObject = new TrackedObject(detectedObject.getID(), currentTick, detectedObject.getDescription(),
                                                     liDarDataBase.searchCoordinates(detectedObject, currentTick));
                     trackedObjects.add(trackedObject);
                 }
                 //Completes the event the camera sent
-                complete(objEvent, trackedObjects);
-                liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
+                complete(currentEvent, trackedObjects);
             }
-            nextToProcess++;
+        }
+        //removes processed events
+        for (int i=0; i<oldEvents.size(); i++){
+            if(oldEvents.get(i).getStampedDetectedObjects().getDetectionTime()+liDarWorkerTracker.getFrequency() <= currentTick){
+                oldEvents.remove(i);
+                i--;
+            }
         }
         return trackedObjects;
     }

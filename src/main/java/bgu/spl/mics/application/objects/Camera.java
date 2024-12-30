@@ -1,6 +1,5 @@
 package bgu.spl.mics.application.objects;
 
-import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.services.CameraService;
 
 import java.util.List;
