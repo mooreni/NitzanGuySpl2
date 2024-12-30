@@ -193,18 +193,4 @@ public class MessageBusImpl implements MessageBus {
 		}
 		return message;
 	}
-
-	/*private <T> Future<?> getFuture (Event<T> e){
-		if(e instanceof DetectObjectsEvent){
-			return ((DetectObjectsEvent)e).getFuture();
-		}
-		else if(e instanceof PoseEvent){
-			return ((PoseEvent)e).getFuture();
-		}
-		else if(e instanceof TrackedObjectsEvent){
-			return ((TrackedObjectsEvent)e).getFuture();
-		}
-		return null;
-	}*/
-
 }

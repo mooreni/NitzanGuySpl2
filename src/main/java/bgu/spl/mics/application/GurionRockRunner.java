@@ -1,12 +1,18 @@
 package bgu.spl.mics.application;
 
+import java.io.FileReader;
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.List;
 
-import bgu.spl.mics.MessageBusImpl;
-import bgu.spl.mics.application.messages.TickBroadcast;
-import bgu.spl.mics.application.objects.LiDarDataBase;
-import bgu.spl.mics.application.objects.StampedCloudPoints;
-import bgu.spl.mics.application.services.TimeService;
+import javax.security.auth.login.Configuration;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import bgu.spl.mics.application.ApplicationConfig;
+import bgu.spl.mics.application.objects.StampedDetectedObjects;
+
 
 /**
  * The main entry point for the GurionRock Pro Max Ultra Over 9000 simulation.
@@ -26,18 +32,29 @@ public class GurionRockRunner {
      */
     public static void main(String[] args) {
         System.out.println("Hello World!");
-        List<StampedCloudPoints> list = LiDarDataBase.getInstance("/root/NitzanGuySpl2/example input/lidar_data.json").getStampedCloudPoints();
-        for(StampedCloudPoints point : list){
-            System.out.println(point.getId());
-            System.out.println(point.getTime());
-            System.out.println(point.getCloudPoints());
-        }
-        //MessageBusImpl bus = MessageBusImpl.getInstance();
-        //bus.subscribeBroadcast(TickBroadcast.class, new TimeService(500, 3));
 
+        //ApplicationConfig config = parseConfigurationFile(args[0]);
+        //config.updateAll();
+        //System.out.println(config.Cameras.CamerasConfigurations.get(0).getFrequency());
         // TODO: Parse configuration file.
         // TODO: Initialize system components and services.
         // TODO: Start the simulation.
+    }
+
+    private static ApplicationConfig parseConfigurationFile(String path) {
+        Gson gson = new Gson();
+        ApplicationConfig config = null;
+        try (FileReader reader = new FileReader(path)) {
+            // Define the type for the list
+            Type configType = new TypeToken<ApplicationConfig>(){}.getType();
+
+            // Deserialize JSON to list of cloudpoints
+            config = gson.fromJson(reader,configType);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return config;
     }
 }
 
@@ -63,8 +80,6 @@ public class GurionRockRunner {
     CameraService: Mostly done. Need to figure out lines 47,49
     ===============================
     LiDarService: started working. Lines 57-64 need to have the whole handling of the DetectObjectEvent.
-                                                                        Unsure what goes on with the dataBase there.
-                                                                        Line 63: check if its + or - here: page 15
                                                                         line 63: is it <= or ==?               
     ===============================
     FusionSlamService: Didnt touch, only added the relevent registers

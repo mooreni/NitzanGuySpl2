@@ -1,8 +1,6 @@
 package bgu.spl.mics.application.services;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;

@@ -8,6 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * the number of objects detected and tracked, and the number of landmarks identified.
  */
 public class StatisticalFolder {
+
+    private static class StatisticalFolderHolder{
+        private static volatile StatisticalFolder instance = new StatisticalFolder();
+    }
     private AtomicInteger systemRuntime;
     private AtomicInteger numDetectedObjects;
     private AtomicInteger numTrackedObjects;
@@ -18,6 +22,10 @@ public class StatisticalFolder {
         this.numDetectedObjects = new AtomicInteger(0);
         this.numTrackedObjects = new AtomicInteger(0);
         this.numLandmarks = new AtomicInteger(0);
+    }
+
+    public static StatisticalFolder getInstance(){
+        return StatisticalFolderHolder.instance;
     }
 
     //These arent synchronized

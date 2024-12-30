@@ -7,7 +7,7 @@
         "camera_key": "camera1"
       }
     ],
-    "camera_datas_path": "./camera_data.json"
+    "camera_datas_path": "/root/NitzanGuySpl2/example input/camera_data.json"
   },
   "LidarWorkers": {
     "LidarConfigurations": [

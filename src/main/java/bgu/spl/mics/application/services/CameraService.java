@@ -8,6 +8,7 @@ import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Camera;
 import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
+import bgu.spl.mics.application.objects.StatisticalFolder;
 
 /**
  * CameraService is responsible for processing data from the camera and
@@ -46,10 +47,11 @@ public class CameraService extends MicroService {
             else{
                 currentTick = tickMessage.getTickTime();
                 for(StampedDetectedObjects obj : camera.getStampedDetectedObjects()){
-                    //If there is data from time T, we will send it when we get to T+Frequency - Check that!!
+                    //If there is data from time T, we will send it when we get to T+Frequency
                     if(obj.getDetectionTime()+camera.getFrequency() == currentTick){
                         //Send event gets back a future - do we need to do something with it?
                         sendEvent(new DetectObjectsEvent(getName(), obj, currentTick));
+                        StatisticalFolder.getInstance().increaseNumDetectedObjects(obj.getDetectedObjects().size());
                     }
                 }
             }

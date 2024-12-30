@@ -6,14 +6,16 @@
         "name": "GurionRockRunner",
         "request": "launch",
         "mainClass": "bgu.spl.mics.application.GurionRockRunner",
-        "projectName": "spl225ass2"
+        "projectName": "spl225ass2",
+        "args": ["/root/NitzanGuySpl2/example input/configuration_file.json"],
+
     },
     {
         "name": "Linux",
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/bin/main",
-        "args": [],
+        "args": ["/root/NitzanGuySpl2/example input/configuration_file.json"],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}",
         "environment": [],

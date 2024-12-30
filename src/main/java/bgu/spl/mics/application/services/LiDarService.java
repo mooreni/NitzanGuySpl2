@@ -11,6 +11,7 @@ import bgu.spl.mics.application.objects.LiDarDataBase;
 import bgu.spl.mics.application.objects.LiDarWorkerTracker;
 import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
+import bgu.spl.mics.application.objects.StatisticalFolder;
 import bgu.spl.mics.application.objects.TrackedObject;
 
 import java.util.List;
@@ -61,6 +62,7 @@ public class LiDarService extends MicroService {
                 if(trackedObjects.size() > 0){
                     liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
                     sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
+                    StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
                 }
                 /*
                 We need to do several things here.
