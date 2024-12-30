@@ -21,10 +21,23 @@ public class Camera {
     private int frequency;
     private STATUS status;
     private List<StampedDetectedObjects> stampedDetectedObjects;
+    private String camera_key;
 
     //I think these field makes sense to have for each camera?
     private CameraService cameraService;
     private Thread thread;
+
+    public Camera(){
+        this.id=0;
+        this.frequency=0;
+        this.status=STATUS.UP;
+        this.camera_key="";
+        this.stampedDetectedObjects = new ArrayList<StampedDetectedObjects>();
+        //I think thats how its meant to be done
+        this.cameraService= new CameraService(this);
+        this.thread = new Thread(cameraService);
+
+    }
 
     //Partial one - might be the only one needed
     public Camera (int id, int frequency, String filePath){
@@ -36,19 +49,24 @@ public class Camera {
         //I think thats how its meant to be done
         this.cameraService= new CameraService(this);
         this.thread = new Thread(cameraService);
-        thread.start();
     }
 
-    //Full constructor - with status
-    public Camera (int id, int frequency, String filePath, STATUS status){
-        this.id=id;
-        this.frequency=frequency;
-        this.status=status;
-        loadData(filePath);
-        //I think thats how its meant to be done
-        this.cameraService= new CameraService(this);
-        this.thread = new Thread(cameraService);
-        thread.start(); 
+    public void loadData(String filePath){
+        Gson gson = new Gson();
+        try (FileReader reader = new FileReader(filePath)) {
+            // Define the type for the list
+            Type detectedType = new TypeToken<List<StampedDetectedObjects>>(){}.getType();
+
+            // Deserialize JSON to list of cloudpoints
+            stampedDetectedObjects = gson.fromJson(reader,detectedType);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void startRunning(){
+        thread.start();
     }
 
     public int getID(){
@@ -63,6 +81,10 @@ public class Camera {
         return status;
     }
 
+    public String getCameraKey(){
+        return camera_key;
+    }
+
     public List<StampedDetectedObjects> getStampedDetectedObjects(){
         return stampedDetectedObjects;
     }
@@ -71,17 +93,7 @@ public class Camera {
         return cameraService;
     }
 
-    private void loadData(String filePath){
-        Gson gson = new Gson();
-        try (FileReader reader = new FileReader(filePath)) {
-            // Define the type for the list
-            Type detectedType = new TypeToken<List<StampedDetectedObjects>>(){}.getType();
-
-            // Deserialize JSON to list of cloudpoints
-            stampedDetectedObjects = gson.fromJson(reader,detectedType);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void setStampedDetectedObjects(List<StampedDetectedObjects> objs){
+        stampedDetectedObjects = objs;
     }
 }

@@ -1,12 +1,20 @@
 package bgu.spl.mics.application;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
-import bgu.spl.mics.MessageBusImpl;
-import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.objects.Camera;
+import bgu.spl.mics.application.objects.FusionSlam;
+import bgu.spl.mics.application.objects.GPSIMU;
 import bgu.spl.mics.application.objects.LiDarDataBase;
-import bgu.spl.mics.application.objects.StampedCloudPoints;
+import bgu.spl.mics.application.objects.LiDarWorkerTracker;
+import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.application.services.FusionSlamService;
+import bgu.spl.mics.application.services.PoseService;
 import bgu.spl.mics.application.services.TimeService;
+import bgu.spl.mics.MessageBusImpl;
+
 
 /**
  * The main entry point for the GurionRock Pro Max Ultra Over 9000 simulation.
@@ -26,19 +34,40 @@ public class GurionRockRunner {
      */
     public static void main(String[] args) {
         System.out.println("Hello World!");
-        List<StampedCloudPoints> list = LiDarDataBase.getInstance("/root/NitzanGuySpl2/example input/lidar_data.json").getStampedCloudPoints();
-        for(StampedCloudPoints point : list){
-            System.out.println(point.getId());
-            System.out.println(point.getTime());
-            System.out.println(point.getCloudPoints());
-        }
-        //MessageBusImpl bus = MessageBusImpl.getInstance();
-        //bus.subscribeBroadcast(TickBroadcast.class, new TimeService(500, 3));
+        Path configAbsolutePath = Paths.get(args[0]).toAbsolutePath();
+        ApplicationConfig config = ParserConfig.parseConfig(configAbsolutePath.toString());
 
-        // TODO: Parse configuration file.
-        // TODO: Initialize system components and services.
+        //Setup the paths
+        Path configDirectory = configAbsolutePath.getParent();
+        String lidarDataRelativePath = config.getLidarWorkers().getLidarsDataPath();
+        Path lidarDataPath = configDirectory.resolve(lidarDataRelativePath).normalize();
+        String camerasDataRelativePath = config.getCameras().getCameraDatasPath();
+        Path camerasDataPath = configDirectory.resolve(camerasDataRelativePath).normalize();
+        String poseDataRelativePath = config.getPoseJsonFile();
+        Path poseDataPath = configDirectory.resolve(poseDataRelativePath).normalize();
+        config.getCameras().setFilePath(camerasDataPath.toString());
+        config.updateCameras();
+
+
+        //Initialize the objects
+        List<Camera> cameras = config.getCameras().getCamerasConfigurations();
+        List<LiDarWorkerTracker> lidarWorkers = config.getLidarWorkers().getLidarConfigurations();
+        LiDarDataBase lidarDataBase = LiDarDataBase.getInstance(lidarDataPath.toString());
+        GPSIMU gpsimu = new GPSIMU(poseDataPath.toString());
+        //FusionSlam fusionSlam = new FusionSlam();
+        StatisticalFolder statisticalFolder = StatisticalFolder.getInstance();
+
+        //Initialize the services
+        TimeService timeService = new TimeService(config.getTickTime(), config.getDuration());
+        PoseService poseService = new PoseService(gpsimu);
+        //FusionSlamService fusionSlamService = new FusionSlamService();
+
+        MessageBusImpl messageBus = MessageBusImpl.getInstance();
+
         // TODO: Start the simulation.
     }
+
+    
 }
 
 /*Project to do and updates list
@@ -63,8 +92,6 @@ public class GurionRockRunner {
     CameraService: Mostly done. Need to figure out lines 47,49
     ===============================
     LiDarService: started working. Lines 57-64 need to have the whole handling of the DetectObjectEvent.
-                                                                        Unsure what goes on with the dataBase there.
-                                                                        Line 63: check if its + or - here: page 15
                                                                         line 63: is it <= or ==?               
     ===============================
     FusionSlamService: Didnt touch, only added the relevent registers

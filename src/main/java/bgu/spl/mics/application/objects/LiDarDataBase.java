@@ -17,7 +17,7 @@ public class LiDarDataBase {
 		private static volatile LiDarDataBase instance = new LiDarDataBase();
 	}
 
-    private static List<StampedCloudPoints> cloudPoints;
+    private List<StampedCloudPoints> cloudPoints;
     /**
      * Returns the singleton instance of LiDarDataBase.
      *
@@ -31,16 +31,18 @@ public class LiDarDataBase {
 
     private void LoadData(String filePath){
         Gson gson = new Gson();
+        List<StampedCloudPoints> parsedCloudPoints = null;
         try (FileReader reader = new FileReader(filePath)) {
             // Define the type for the list
             Type stampedCloudPointType = new TypeToken<List<StampedCloudPoints>>(){}.getType();
 
             // Deserialize JSON to list of cloudpoints
-            cloudPoints = gson.fromJson(reader,stampedCloudPointType);
+            parsedCloudPoints = gson.fromJson(reader,stampedCloudPointType);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+        cloudPoints = parsedCloudPoints;
     }
         // Should load the lidar data file and extract the cloud points to the list
 

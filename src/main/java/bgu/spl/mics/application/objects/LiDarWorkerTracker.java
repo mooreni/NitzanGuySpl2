@@ -20,6 +20,16 @@ public class LiDarWorkerTracker {
     private LiDarService liDarService;
     private Thread thread;
 
+    public LiDarWorkerTracker(){
+        this.id=0;
+        this.frequency=0;
+        this.status=STATUS.UP;
+        this.lastTrackedObjects = new ArrayList<TrackedObject>();
+        //I think thats how its meant to be done
+        this.liDarService= new LiDarService(this);
+        this.thread = new Thread(liDarService);
+    }
+
     //Partial one - might be the only one needed
     public LiDarWorkerTracker (int id, int frequency){
         this.id=id;
@@ -29,18 +39,9 @@ public class LiDarWorkerTracker {
         //I think thats how its meant to be done
         this.liDarService= new LiDarService(this);
         this.thread = new Thread(liDarService);
-        thread.start();
     }
 
-    //Full constructor - all fields
-    public LiDarWorkerTracker(int id, int frequency, STATUS status, List<TrackedObject> lastTrackedObjects){
-        this.id=id;
-        this.frequency=frequency;
-        this.status=status;
-        this.lastTrackedObjects = lastTrackedObjects;
-        //I think thats how its meant to be done
-        this.liDarService= new LiDarService(this);
-        this.thread = new Thread(liDarService);
+    public void startRunning(){
         thread.start();
     }
 
@@ -64,9 +65,9 @@ public class LiDarWorkerTracker {
         this.lastTrackedObjects = trackedObjects;
     }
 
-
-
     public LiDarService getLiDarService(){
         return liDarService;
     }
+
+
 }
