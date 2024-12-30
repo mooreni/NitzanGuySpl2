@@ -175,13 +175,12 @@ public abstract class MicroService implements Runnable {
                 Message m = msgBus.awaitMessage(this);
                 Callback<Message> c = (Callback<Message>)messageCallbacks.get(m.getClass());
                 c.call(m);
-                msgBus.unregister(this);//do we need it here? page 13
-                sendBroadcast(new TerminatedBroadcast(getName()));
             } catch (InterruptedException e) {
-            msgBus.unregister(this);//do we need it here? page 13
-            //sendBroadcast(new TerminatedBroadcast(getName())); <-Unsure if needed
-            Thread.currentThread().interrupt();
+                //sendBroadcast(new TerminatedBroadcast(getName())); //<-Unsure if needed
+                Thread.currentThread().interrupt();
             }
         }
+        sendBroadcast(new TerminatedBroadcast(getName()));
+        msgBus.unregister(this);
     }
 }
