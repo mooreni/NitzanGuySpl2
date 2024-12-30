@@ -1,17 +1,19 @@
 package bgu.spl.mics.application;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.lang.reflect.Type;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
-import javax.security.auth.login.Configuration;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import bgu.spl.mics.application.ApplicationConfig;
-import bgu.spl.mics.application.objects.StampedDetectedObjects;
+import bgu.spl.mics.application.objects.Camera;
+import bgu.spl.mics.application.objects.FusionSlam;
+import bgu.spl.mics.application.objects.GPSIMU;
+import bgu.spl.mics.application.objects.LiDarDataBase;
+import bgu.spl.mics.application.objects.LiDarWorkerTracker;
+import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.application.services.FusionSlamService;
+import bgu.spl.mics.application.services.PoseService;
+import bgu.spl.mics.application.services.TimeService;
+import bgu.spl.mics.MessageBusImpl;
 
 
 /**
@@ -32,30 +34,40 @@ public class GurionRockRunner {
      */
     public static void main(String[] args) {
         System.out.println("Hello World!");
+        Path configAbsolutePath = Paths.get(args[0]).toAbsolutePath();
+        ApplicationConfig config = ParserConfig.parseConfig(configAbsolutePath.toString());
 
-        //ApplicationConfig config = parseConfigurationFile(args[0]);
-        //config.updateAll();
-        //System.out.println(config.Cameras.CamerasConfigurations.get(0).getFrequency());
-        // TODO: Parse configuration file.
-        // TODO: Initialize system components and services.
+        //Setup the paths
+        Path configDirectory = configAbsolutePath.getParent();
+        String lidarDataRelativePath = config.getLidarWorkers().getLidarsDataPath();
+        Path lidarDataPath = configDirectory.resolve(lidarDataRelativePath).normalize();
+        String camerasDataRelativePath = config.getCameras().getCameraDatasPath();
+        Path camerasDataPath = configDirectory.resolve(camerasDataRelativePath).normalize();
+        String poseDataRelativePath = config.getPoseJsonFile();
+        Path poseDataPath = configDirectory.resolve(poseDataRelativePath).normalize();
+        config.getCameras().setFilePath(camerasDataPath.toString());
+        config.updateCameras();
+
+
+        //Initialize the objects
+        List<Camera> cameras = config.getCameras().getCamerasConfigurations();
+        List<LiDarWorkerTracker> lidarWorkers = config.getLidarWorkers().getLidarConfigurations();
+        LiDarDataBase lidarDataBase = LiDarDataBase.getInstance(lidarDataPath.toString());
+        GPSIMU gpsimu = new GPSIMU(poseDataPath.toString());
+        //FusionSlam fusionSlam = new FusionSlam();
+        StatisticalFolder statisticalFolder = StatisticalFolder.getInstance();
+
+        //Initialize the services
+        TimeService timeService = new TimeService(config.getTickTime(), config.getDuration());
+        PoseService poseService = new PoseService(gpsimu);
+        //FusionSlamService fusionSlamService = new FusionSlamService();
+
+        MessageBusImpl messageBus = MessageBusImpl.getInstance();
+
         // TODO: Start the simulation.
     }
 
-    private static ApplicationConfig parseConfigurationFile(String path) {
-        Gson gson = new Gson();
-        ApplicationConfig config = null;
-        try (FileReader reader = new FileReader(path)) {
-            // Define the type for the list
-            Type configType = new TypeToken<ApplicationConfig>(){}.getType();
-
-            // Deserialize JSON to list of cloudpoints
-            config = gson.fromJson(reader,configType);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return config;
-    }
+    
 }
 
 /*Project to do and updates list

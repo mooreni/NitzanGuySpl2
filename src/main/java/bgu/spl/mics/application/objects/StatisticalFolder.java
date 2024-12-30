@@ -17,7 +17,7 @@ public class StatisticalFolder {
     private AtomicInteger numTrackedObjects;
     private AtomicInteger numLandmarks;
 
-    public StatisticalFolder(){
+    private StatisticalFolder(){
         this.systemRuntime = new AtomicInteger(0);
         this.numDetectedObjects = new AtomicInteger(0);
         this.numTrackedObjects = new AtomicInteger(0);

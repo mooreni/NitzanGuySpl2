@@ -18,6 +18,13 @@ public class GPSIMU {
     private STATUS status;
     private List<Pose> poseList;
 
+    public GPSIMU(String filePath){
+        currTime = 0;
+        status = STATUS.DOWN;
+        poseList = new ArrayList<>();
+        this.loadData(filePath);
+    }
+
     public GPSIMU(int currTime, STATUS status, List<Pose> poseList, String filePath){
         this.currTime = currTime;
         this.poseList = poseList;

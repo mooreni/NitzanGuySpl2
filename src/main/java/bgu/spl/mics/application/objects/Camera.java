@@ -21,6 +21,7 @@ public class Camera {
     private int frequency;
     private STATUS status;
     private List<StampedDetectedObjects> stampedDetectedObjects;
+    private String camera_key;
 
     //I think these field makes sense to have for each camera?
     private CameraService cameraService;
@@ -30,10 +31,12 @@ public class Camera {
         this.id=0;
         this.frequency=0;
         this.status=STATUS.UP;
+        this.camera_key="";
         this.stampedDetectedObjects = new ArrayList<StampedDetectedObjects>();
         //I think thats how its meant to be done
         this.cameraService= new CameraService(this);
         this.thread = new Thread(cameraService);
+
     }
 
     //Partial one - might be the only one needed
@@ -78,11 +81,19 @@ public class Camera {
         return status;
     }
 
+    public String getCameraKey(){
+        return camera_key;
+    }
+
     public List<StampedDetectedObjects> getStampedDetectedObjects(){
         return stampedDetectedObjects;
     }
 
     public CameraService getCameraService(){
         return cameraService;
+    }
+
+    public void setStampedDetectedObjects(List<StampedDetectedObjects> objs){
+        stampedDetectedObjects = objs;
     }
 }
