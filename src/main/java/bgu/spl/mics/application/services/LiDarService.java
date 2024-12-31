@@ -37,7 +37,7 @@ public class LiDarService extends MicroService {
      * @param LiDarWorkerTracker A LiDAR Tracker worker object that this service will use to process data.
      */
     public LiDarService(LiDarWorkerTracker LiDarWorkerTracker) {
-        super("LiDarService" + LiDarWorkerTracker.getID());
+        super("LiDarService");
         this.liDarWorkerTracker = LiDarWorkerTracker;
         oldEvents = new ArrayList<>();
         currentTick = 0;
@@ -58,10 +58,17 @@ public class LiDarService extends MicroService {
             }
             else{
                 currentTick = tickMessage.getTickTime();
+                if(liDarDataBase.checkForError(currentTick)){
+                    setStatus(STATUS.ERROR);
+                    sendBroadcast(new CrashedBroadcast(getName()));
+                    terminate();
+                    return;
+                }
+
                 List<TrackedObject> trackedObjects = trackObjects();
                 if(trackedObjects.size() > 0){
                     liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
-                    LiDarDataBase.getInstance().setLastTrackedObjects(trackedObjects);
+                    liDarDataBase.setLastTrackedObjects(trackedObjects);
                     sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
                     StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
                 }

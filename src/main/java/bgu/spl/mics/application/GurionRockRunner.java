@@ -82,7 +82,7 @@ public class GurionRockRunner {
 
     LiDarService: line 63: is it <= or ==?               
     
-    FusionSlamService: 
+    FusionSlamService: what should we do with the tickMessage in fusionSlam
 
     PoseService: 
 

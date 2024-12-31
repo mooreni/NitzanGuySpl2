@@ -27,7 +27,7 @@ public class CameraService extends MicroService {
      * @param camera The Camera object that this service will use to detect objects.
      */
     public CameraService(Camera camera) {
-        super("CameraService" + camera.getID());
+        super("CameraService");
         this.camera = camera;
         currentTick=0;
         // TODO Implement this - do we need to add something else?
@@ -54,6 +54,7 @@ public class CameraService extends MicroService {
                                 camera.setStatus(STATUS.ERROR);
                                 sendBroadcast(new CrashedBroadcast(getName()));
                                 terminate();
+                                return;
                             }
                         }
                     }

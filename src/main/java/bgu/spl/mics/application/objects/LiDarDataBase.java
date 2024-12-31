@@ -75,6 +75,18 @@ public class LiDarDataBase {
         return coordinates;
     }
 
+    public boolean checkForError(int time){
+        for(StampedCloudPoints stampedCloudPoints : cloudPoints){
+            if(stampedCloudPoints.getTime() > time){
+                break;
+            }
+            if(stampedCloudPoints.getTime() == time && stampedCloudPoints.getId().compareTo("ERROR") == 0){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public List<TrackedObject> getLastTrackedObjects(){
         return lastTrackedObjects;
     }
