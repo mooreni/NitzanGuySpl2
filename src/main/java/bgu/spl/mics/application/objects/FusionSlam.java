@@ -2,6 +2,7 @@ package bgu.spl.mics.application.objects;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Manages the fusion of sensor data for simultaneous localization and mapping (SLAM).
@@ -16,6 +17,8 @@ public class FusionSlam {
 
     private List<LandMark> globalMap;
     private List<Pose> previousRobotPoses;
+    private List<TrackedObject> waitingTrackedObjects;
+    private int sensorsCount;
     /**
      * Retrieves the single instance of FusionSlam.
      *
@@ -31,6 +34,8 @@ public class FusionSlam {
     private FusionSlam() {
         previousRobotPoses = new ArrayList<>();
         globalMap = new ArrayList<>();
+        waitingTrackedObjects = new ArrayList<>();
+        sensorsCount = 0;
 
     }
 
@@ -39,11 +44,11 @@ public class FusionSlam {
      *
      * @param landmarks The landmarks to add to the global map.
      */ 
-    public void updateGlobalMap(LandMark landmarks) {
+    public void addLandmark(LandMark landmarks) {
         globalMap.add(landmarks);
     }
 
-    public void updatePreviousRobotPoses(Pose pose) {
+    public void addPose(Pose pose) {
         previousRobotPoses.add(pose);
     }
 
@@ -92,5 +97,48 @@ public class FusionSlam {
         }
 
         return averagedList;
+    }
+
+    public void updateGlobalMap(TrackedObject trackedObject) {
+        List<CloudPoint> cloudPoints = trackedObject.getCloudCoordinates();
+        List<CloudPoint> transformedCloudPoints = new ArrayList<>();
+        for(CloudPoint cloudPoint : cloudPoints){
+            Pose pose = getPreviousRobotPoses().get(trackedObject.getTime()-1);
+            transformedCloudPoints.add(calculateCoordinates(pose, cloudPoint));
+        }
+        Iterator<LandMark> landMarkIterator = getGlobalMap().iterator();
+        boolean exists = false;
+        LandMark newLandMark = new LandMark(trackedObject.getID(), trackedObject.getDescription(), transformedCloudPoints);
+        LandMark landMark = landMarkIterator.next();
+        while(landMarkIterator.hasNext()&&!exists){
+            if(landMark.getId().equals(newLandMark.getId())){
+                newLandMark.setCloudPoints(averageCloudPoints(landMark.getCloudPoints(), transformedCloudPoints));
+                getGlobalMap().remove(landMark);  
+            }
+            else{
+                landMark = landMarkIterator.next();
+            }
+        }
+        addLandmark(newLandMark);
+    }
+
+    public void addWaitingTrackedObject(TrackedObject trackedObject) {
+        waitingTrackedObjects.add(trackedObject);
+    }
+
+    public List<TrackedObject> getWaitingTrackedObjects() {
+        return waitingTrackedObjects;
+    }
+
+    public void setSensorsCount(int num) {
+        sensorsCount = num;
+    }
+
+    public void decrementSensorsCount() {
+        sensorsCount--;
+    }
+
+    public int getSensorsCount() {
+        return sensorsCount;
     }
 }

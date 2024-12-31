@@ -46,37 +46,36 @@ public class FusionSlamService extends MicroService {
     @Override
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
+            if (fusionSlam.getSensorsCount()==0){
+                sendBroadcast(new TerminatedBroadcast(getName()));
+                terminate();
+            }
            
 
         });
         subscribeEvent(TrackedObjectsEvent.class, trackedObjectMessage ->{
             List<TrackedObject> trackedObjects = trackedObjectMessage.getTrackedObject();
             for(TrackedObject trackedObject : trackedObjects){
-                List<CloudPoint> cloudPoints = trackedObject.getCloudCoordinates();
-                List<CloudPoint> transformedCloudPoints = new ArrayList<>();
-                for(CloudPoint cloudPoint : cloudPoints){
-                    Pose pose = fusionSlam.getPreviousRobotPoses().get(trackedObject.getTime());
-                    transformedCloudPoints.add(fusionSlam.calculateCoordinates(pose, cloudPoint));
+                if(fusionSlam.getPreviousRobotPoses().size() >= trackedObject.getTime()){
+                    fusionSlam.updateGlobalMap(trackedObject);
                 }
-                Iterator<LandMark> landMarkIterator = fusionSlam.getGlobalMap().iterator();
-                boolean exists = false;
-                LandMark newLandMark = new LandMark(trackedObject.getID(), trackedObject.getDescription(), transformedCloudPoints);
-                LandMark landMark = landMarkIterator.next();
-                while(landMarkIterator.hasNext()&&!exists){
-                    if(landMark.getId().equals(newLandMark.getId())){
-                        newLandMark.setCloudPoints(fusionSlam.averageCloudPoints(landMark.getCloudPoints(), transformedCloudPoints));  
-                    }
-                    else{
-                        landMark = landMarkIterator.next();
-                    }
+                else{
+                    fusionSlam.addWaitingTrackedObject(trackedObject);
                 }
-                fusionSlam.updateGlobalMap(newLandMark);
             }
             complete(trackedObjectMessage, true);
         });
         subscribeEvent(PoseEvent.class, poseMessage ->{
             Pose pose = poseMessage.getPose();
-            fusionSlam.updatePreviousRobotPoses(pose);
+            fusionSlam.addPose(pose);
+            boolean exists = false;
+            for(int i = 0; i < fusionSlam.getWaitingTrackedObjects().size()&&!exists; i++){
+                if(fusionSlam.getWaitingTrackedObjects().get(i).getTime() == pose.getTime()){
+                    fusionSlam.updateGlobalMap(fusionSlam.getWaitingTrackedObjects().get(i));
+                    fusionSlam.getWaitingTrackedObjects().remove(i);
+                    exists = true;
+                }
+            }
             complete(poseMessage, true);
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
