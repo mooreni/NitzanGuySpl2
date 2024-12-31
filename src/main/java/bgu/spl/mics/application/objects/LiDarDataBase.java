@@ -18,6 +18,8 @@ public class LiDarDataBase {
 	}
 
     private List<StampedCloudPoints> cloudPoints;
+    private List<TrackedObject> lastTrackedObjects;
+
     /**
      * Returns the singleton instance of LiDarDataBase.
      *
@@ -27,6 +29,8 @@ public class LiDarDataBase {
 
     private LiDarDataBase(){
         cloudPoints = new ArrayList<StampedCloudPoints>();
+        lastTrackedObjects = new ArrayList<TrackedObject>();
+
     }
 
     private void LoadData(String filePath){
@@ -69,5 +73,13 @@ public class LiDarDataBase {
             }
         }
         return coordinates;
+    }
+
+    public List<TrackedObject> getLastTrackedObjects(){
+        return lastTrackedObjects;
+    }
+
+    public void setLastTrackedObjects(List<TrackedObject> trackedObjects){
+        lastTrackedObjects = trackedObjects;
     }
 }
