@@ -3,10 +3,7 @@ package bgu.spl.mics.application.services;
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
-import bgu.spl.mics.application.messages.DetectObjectsEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
-import bgu.spl.mics.application.objects.STATUS;
-import bgu.spl.mics.application.objects.StampedDetectedObjects;
 import bgu.spl.mics.application.objects.StatisticalFolder;
 
 /**
@@ -28,7 +25,7 @@ public class TimeService extends MicroService {
         super("TimeService");
         tickTime = TickTime;
         duration = Duration;
-        currentTick=0;
+        currentTick=1;
     }
 
     /**
@@ -40,18 +37,21 @@ public class TimeService extends MicroService {
         //For every tick received, we will sleep for the tickTime and send another tick
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
             try{
-                Thread.sleep(tickTime*1000);
+                Thread.sleep((long)tickTime);
             } catch (InterruptedException e){
                 Thread.currentThread().interrupt();
                 terminate();
+                return;
             }
             currentTick++;
             StatisticalFolder.getInstance().increaseSystemRuntime();
             if(currentTick == duration){
                 sendBroadcast(new TerminatedBroadcast(getName()));
                 terminate();
+                return;
             }
             sendBroadcast(new TickBroadcast(currentTick));
+            //System.out.println("Tick "+currentTick);
 
         });
         //Send first tick
@@ -64,6 +64,15 @@ public class TimeService extends MicroService {
             }
         });
         //If one of the services crashed, terminate too
-        subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());
+        subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> {
+            terminate();
+        });
     }
 }
+
+
+/*              {
+    "id": "ERROR",
+    "description": "GLaDOS has repurposed the robot to conduct endless cake-fetching tests. Success is a lie."
+},
+*/

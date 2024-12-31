@@ -55,7 +55,7 @@ public class GurionRockRunner {
         List<LiDarWorkerTracker> lidarWorkers = config.getLidarWorkers().getLidarConfigurations();
         LiDarDataBase lidarDataBase = LiDarDataBase.getInstance(lidarDataPath.toString());
         GPSIMU gpsimu = new GPSIMU(poseDataPath.toString());
-        FusionSlam fusionSlam = FusionSlam.getInstance();
+        FusionSlam fusionSlam = FusionSlam.getInstance(configDirectory.toString());
         fusionSlam.setSensorsCount(cameras.size() + lidarWorkers.size() + 1);
         StatisticalFolder statisticalFolder = StatisticalFolder.getInstance();
 
@@ -65,6 +65,21 @@ public class GurionRockRunner {
         FusionSlamService fusionSlamService = new FusionSlamService();
 
         MessageBusImpl messageBus = MessageBusImpl.getInstance();
+
+        for(Camera camera: cameras){
+            camera.startRunning();
+        }
+        for(LiDarWorkerTracker lidarWorker: lidarWorkers){
+            lidarWorker.startRunning();
+        }
+        Thread t1 = new Thread(poseService);
+        t1.start();
+
+        Thread t2 = new Thread(fusionSlamService);
+        t2.start();
+
+        Thread t3 = new Thread(timeService);
+        t3.start();
 
         // TODO: Start the simulation.
     }

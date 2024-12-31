@@ -45,14 +45,14 @@ public class FusionSlamService extends MicroService {
      */
     @Override
     protected void initialize() {
+
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
             if (fusionSlam.getSensorsCount()==0){
                 sendBroadcast(new TerminatedBroadcast(getName()));
                 terminate();
             }
-           
-
         });
+        
         subscribeEvent(TrackedObjectsEvent.class, trackedObjectMessage ->{
             List<TrackedObject> trackedObjects = trackedObjectMessage.getTrackedObject();
             for(TrackedObject trackedObject : trackedObjects){
@@ -65,6 +65,7 @@ public class FusionSlamService extends MicroService {
             }
             complete(trackedObjectMessage, true);
         });
+
         subscribeEvent(PoseEvent.class, poseMessage ->{
             Pose pose = poseMessage.getPose();
             fusionSlam.addPose(pose);
@@ -78,17 +79,21 @@ public class FusionSlamService extends MicroService {
             }
             complete(poseMessage, true);
         });
+
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
             if((terminateMessage.getSenderName().compareTo("CameraService") == 0)||
-                (terminateMessage.getSenderName().compareTo("LiDARService") == 0)||
+                (terminateMessage.getSenderName().compareTo("LiDarService") == 0)||
                 (terminateMessage.getSenderName().compareTo("Pose") == 0)){
                 fusionSlam.decrementSensorsCount();
             }
             if(fusionSlam.getSensorsCount() == 0){
                 sendBroadcast(new TerminatedBroadcast(getName()));
                 terminate();
+                fusionSlam.createNormalOutput();
             }
+
         });
+
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
             terminate();
         });    

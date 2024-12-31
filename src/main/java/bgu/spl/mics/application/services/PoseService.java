@@ -33,7 +33,7 @@ public class PoseService extends MicroService {
     @Override
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
-           if(gpsimu.getStatus()==STATUS.ERROR){
+            if(gpsimu.getStatus()==STATUS.ERROR){
                 sendBroadcast(new CrashedBroadcast(getName()));
                 terminate();
             }
@@ -43,8 +43,9 @@ public class PoseService extends MicroService {
                 sendEvent(new PoseEvent(getName(), poseList.get(currentTick-1), currentTick));
                 gpsimu.incrementSentPosesCounter();
             }
+            
             if(gpsimu.getSentPosesCounter() == gpsimu.getPoseList().size()){
-                sendBroadcast(new CrashedBroadcast(getName()));
+                sendBroadcast(new TerminatedBroadcast(getName()));
                 gpsimu.setStatus(STATUS.DOWN);
                 terminate();
             }

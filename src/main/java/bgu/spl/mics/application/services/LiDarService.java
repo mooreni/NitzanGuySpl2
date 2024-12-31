@@ -58,18 +58,21 @@ public class LiDarService extends MicroService {
             }
             else{
                 currentTick = tickMessage.getTickTime();
+                //Checks if the LiDarDataBase has an error at current time
                 if(liDarDataBase.checkForError(currentTick)){
-                    setStatus(STATUS.ERROR);
+                    liDarWorkerTracker.setStatus(STATUS.ERROR);
                     sendBroadcast(new CrashedBroadcast(getName()));
                     terminate();
                     return;
                 }
 
+                //Checks if the LiDarDataBase has new data at current time
                 List<TrackedObject> trackedObjects = trackObjects();
                 if(trackedObjects.size() > 0){
+                    //System.out.println("LiDarService: amount of objects: " + trackedObjects.size() + ", detected time: " + trackedObjects.get(0).getTime());
+                    sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
                     liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
                     liDarDataBase.setLastTrackedObjects(trackedObjects);
-                    sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
                     StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
                 }
 
@@ -85,10 +88,13 @@ public class LiDarService extends MicroService {
                 //Checks if the new event already got processed and send it further
                 List<TrackedObject> trackedObjects = trackObjects();
                 if(trackedObjects.size() > 0){
-                    liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
-                    LiDarDataBase.getInstance().setLastTrackedObjects(trackedObjects);
+                    //System.out.println("LiDarService: " + liDarDataBase.getSentObjectsCount());
                     sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
+                    liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
+                    liDarDataBase.setLastTrackedObjects(trackedObjects);
+                    StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
                 }
+                //If we sent all the objects, terminate
                 if(liDarDataBase.getSentObjectsCount() == liDarDataBase.getStampedCloudPoints().size()){
                     sendBroadcast(new TerminatedBroadcast(getName()));
                     liDarWorkerTracker.setStatus(STATUS.DOWN);
@@ -117,7 +123,7 @@ public class LiDarService extends MicroService {
                 //For every object in the event, we create a TrackedObject and add it to the list
                 for(DetectedObject detectedObject : stampedDetectedObjects.getDetectedObjects()){
                     TrackedObject trackedObject = new TrackedObject(detectedObject.getID(), currentTick, detectedObject.getDescription(),
-                                                    liDarDataBase.searchCoordinates(detectedObject, currentTick));
+                                                    liDarDataBase.searchCoordinates(detectedObject, stampedDetectedObjects.getDetectionTime()));
                     trackedObjects.add(trackedObject);
                     liDarDataBase.increaseSentObjectsCount();
                 }

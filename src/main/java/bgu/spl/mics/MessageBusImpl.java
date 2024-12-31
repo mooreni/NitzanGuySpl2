@@ -69,6 +69,7 @@ public class MessageBusImpl implements MessageBus {
 		//Locking the queue of the event we want to add to, so only m can register
 		synchronized(q){
 			q.offer(m);
+			q.notifyAll();
 			//eventsSubs.computeIfAbsent(type, k -> new ConcurrentLinkedQueue<>()).add(m);
 		}
 	}
@@ -79,6 +80,7 @@ public class MessageBusImpl implements MessageBus {
 		//Locking the queue of the event we want to add to, so only m can register
 		synchronized(q){
 			q.offer(m);
+			q.notifyAll();
 			//q.computeIfAbsent(type, k -> new ConcurrentLinkedQueue<>()).add(m);
 		}
 	} 
@@ -91,8 +93,8 @@ public class MessageBusImpl implements MessageBus {
 			// Unsafe casting, maybe there's a better idea
 			Future<T> f = (Future<T>)eventsFutures.get(e);
 			f.resolve(result);
-			f.notifyAll();
 			eventsFutures.remove(e);
+			eventsFutures.notifyAll();
 		}
 	}
 
@@ -112,8 +114,10 @@ public class MessageBusImpl implements MessageBus {
 				ConcurrentLinkedQueue<Message> lst = registeredServices.get(m);
 				synchronized(lst){
 					lst.offer(b);
+					lst.notifyAll();
 				}
 			}
+			q.notifyAll();
 		}
 	}
 
@@ -133,9 +137,10 @@ public class MessageBusImpl implements MessageBus {
 				ConcurrentLinkedQueue<Message> lst = registeredServices.get(m);
 				synchronized(lst){
 					lst.offer(e);
+					lst.notifyAll();
 				}
-				lst.notifyAll();
 			}
+			q.notifyAll();
 			
 		}
 		return f;
@@ -152,26 +157,32 @@ public class MessageBusImpl implements MessageBus {
 		ConcurrentLinkedQueue<MicroService> q1 = eventsSubs.get(PoseEvent.class);
 		synchronized(q1){
 			q1.remove(m);
+			q1.notifyAll();
 		}
 		ConcurrentLinkedQueue<MicroService> q2 = eventsSubs.get(DetectObjectsEvent.class);
 		synchronized(q2){
 			q2.remove(m);
+			q2.notifyAll();
 		}
 		ConcurrentLinkedQueue<MicroService> q3 = eventsSubs.get(TrackedObjectsEvent.class);
 		synchronized(q3){
 			q3.remove(m);
+			q3.notifyAll();
 		}
 		ConcurrentLinkedQueue<MicroService> q4 = broadcastsSubs.get(TickBroadcast.class);
 		synchronized(q4){
 			q4.remove(m);
+			q4.notifyAll();
 		}
-		ConcurrentLinkedQueue<MicroService> q5 = eventsSubs.get(CrashedBroadcast.class);
+		ConcurrentLinkedQueue<MicroService> q5 = broadcastsSubs.get(CrashedBroadcast.class);
 		synchronized(q5){
 			q5.remove(m);
+			q5.notifyAll();
 		}
-		ConcurrentLinkedQueue<MicroService> q6 = eventsSubs.get(TerminatedBroadcast.class);
+		ConcurrentLinkedQueue<MicroService> q6 = broadcastsSubs.get(TerminatedBroadcast.class);
 		synchronized(q6){
 			q6.remove(m);
+			q6.notifyAll();
 		}
 		registeredServices.remove(m);
 	}
@@ -180,15 +191,17 @@ public class MessageBusImpl implements MessageBus {
 	public Message awaitMessage(MicroService m) throws InterruptedException {
 		ConcurrentLinkedQueue<Message> q = registeredServices.get(m);
 		Message message=null;
+
+		//It only worked for me this way and i didnt have the time to check why
 		synchronized(q){
-			while(q.isEmpty()){
-				try{
+			try{
+				while(q.isEmpty()){
 					q.wait();
-					message = q.remove();
-					q.notifyAll();
-				}catch(InterruptedException e){
-					Thread.currentThread().interrupt();
 				}
+				message = q.remove();
+				q.notifyAll();
+			}catch(InterruptedException e){
+				Thread.currentThread().interrupt();
 			}
 		}
 		return message;

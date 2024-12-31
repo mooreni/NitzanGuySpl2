@@ -8,21 +8,21 @@ import java.util.ArrayList;
  * Includes the time of detection and a list of detected objects.
  */
 public class StampedDetectedObjects {
-    private int detectionTime;
+    private int time;
     private List<DetectedObject> detectedObjects;
 
     public StampedDetectedObjects(int detectionTime){
-        this.detectionTime=detectionTime;
+        this.time=detectionTime;
         detectedObjects = new ArrayList<>();
     }
 
     public StampedDetectedObjects(int detectionTime, List<DetectedObject> detectedObjects){
-        this.detectionTime=detectionTime;
+        this.time=detectionTime;
         this.detectedObjects=detectedObjects;
     }
 
     public int getDetectionTime(){
-        return detectionTime;
+        return time;
     }
 
     public List<DetectedObject> getDetectedObjects(){

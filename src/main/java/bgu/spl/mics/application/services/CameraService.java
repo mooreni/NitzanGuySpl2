@@ -48,6 +48,7 @@ public class CameraService extends MicroService {
             else{
                 currentTick = tickMessage.getTickTime();
                 for(StampedDetectedObjects obj : camera.getStampedDetectedObjects()){
+                    //If there is Error in currentTick
                     if(obj.getDetectionTime() == currentTick){
                         for(DetectedObject detectedObject : obj.getDetectedObjects()){
                             if(detectedObject.getID().equals("ERROR")){
@@ -58,14 +59,17 @@ public class CameraService extends MicroService {
                             }
                         }
                     }
+
                     //If there is data from time T, we will send it when we get to T+Frequency
                     if(obj.getDetectionTime()+camera.getFrequency() == currentTick){
                         //Send event gets back a future - do we need to do something with it?
+                        //System.out.println("CameraService:" + camera.getSentObjectsCount());
                         sendEvent(new DetectObjectsEvent(getName(), obj, currentTick));
                         camera.increaseSentObjectsCount();
                         StatisticalFolder.getInstance().increaseNumDetectedObjects(obj.getDetectedObjects().size());
                     }
                 }
+                //If we sent all the objects, terminate
                 if (camera.getSentObjectsCount() == camera.getStampedDetectedObjects().size()) {
                     sendBroadcast(new TerminatedBroadcast(getName()));
                     camera.setStatus(STATUS.DOWN);

@@ -1,6 +1,14 @@
 package bgu.spl.mics.application.objects;
 
 import java.util.List;
+import bgu.spl.mics.application.NormalOutput;
+
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -19,12 +27,18 @@ public class FusionSlam {
     private List<Pose> previousRobotPoses;
     private List<TrackedObject> waitingTrackedObjects;
     private int sensorsCount;
+    private String path; //Path to output folder
     /**
      * Retrieves the single instance of FusionSlam.
      *
      * @return The FusionSlam instance.
      */ 
     public static FusionSlam getInstance() {
+        return FusionSlamHolder.instance;
+    }
+
+    public static FusionSlam getInstance(String path) {
+        FusionSlamHolder.instance.path = path;
         return FusionSlamHolder.instance;
     }
 
@@ -109,15 +123,19 @@ public class FusionSlam {
         Iterator<LandMark> landMarkIterator = getGlobalMap().iterator();
         boolean exists = false;
         LandMark newLandMark = new LandMark(trackedObject.getID(), trackedObject.getDescription(), transformedCloudPoints);
-        LandMark landMark = landMarkIterator.next();
+        LandMark landMark;
+        //Changed here so that it wont do "next()" on an empty list
         while(landMarkIterator.hasNext()&&!exists){
+            landMark = landMarkIterator.next();
             if(landMark.getId().equals(newLandMark.getId())){
                 newLandMark.setCloudPoints(averageCloudPoints(landMark.getCloudPoints(), transformedCloudPoints));
-                getGlobalMap().remove(landMark);  
+                exists = true;
+                landMarkIterator.remove();  
             }
-            else{
-                landMark = landMarkIterator.next();
-            }
+        }
+        //If it didnt exist before, add to the statistical folder
+        if(!exists){
+            StatisticalFolder.getInstance().increaseNumLandmarks(1);;
         }
         addLandmark(newLandMark);
     }
@@ -140,5 +158,29 @@ public class FusionSlam {
 
     public int getSensorsCount() {
         return sensorsCount;
+    }
+
+    //Creates a file that represents the terminated program (didnt crash)
+    public void createNormalOutput(){
+        StatisticalFolder folder = StatisticalFolder.getInstance();
+        NormalOutput output = new NormalOutput(folder.getSystemRuntime(), folder.getNumDetectedObjects(), folder.getNumTrackedObjects(), folder.getNumLandmarks(), getGlobalMap());
+        //Creates the json and writes it
+        toJson(output);
+    }
+
+    //public void createErrorOutput(){
+        //ErrorOutput output = new ErrorOutput();
+        //toJson(output);
+    //}
+
+    //Recieves the output json - of EITHER TYPE! I think it can recieve both normalOutput file or errorOutput file
+    public void toJson(Object output) {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (FileWriter writer = new FileWriter(path + "/outputTest.json")) {
+            // Serialize Java objects to JSON file
+            gson.toJson(output, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
