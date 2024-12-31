@@ -20,7 +20,7 @@ public class GPSIMU {
 
     public GPSIMU(String filePath){
         currTime = 0;
-        status = STATUS.DOWN;
+        status = STATUS.UP;
         poseList = new ArrayList<>();
         this.loadData(filePath);
     }
@@ -35,7 +35,7 @@ public class GPSIMU {
     public GPSIMU(){
         currTime = 0;
         poseList = new ArrayList<>();
-        status = STATUS.DOWN;
+        status = STATUS.UP;
     }
 
     public STATUS getStatus(){

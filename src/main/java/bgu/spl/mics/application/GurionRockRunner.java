@@ -34,6 +34,7 @@ public class GurionRockRunner {
      */
     public static void main(String[] args) {
         System.out.println("Hello World!");
+
         Path configAbsolutePath = Paths.get(args[0]).toAbsolutePath();
         ApplicationConfig config = ParserConfig.parseConfig(configAbsolutePath.toString());
 
@@ -54,13 +55,13 @@ public class GurionRockRunner {
         List<LiDarWorkerTracker> lidarWorkers = config.getLidarWorkers().getLidarConfigurations();
         LiDarDataBase lidarDataBase = LiDarDataBase.getInstance(lidarDataPath.toString());
         GPSIMU gpsimu = new GPSIMU(poseDataPath.toString());
-        //FusionSlam fusionSlam = new FusionSlam();
+        FusionSlam fusionSlam = FusionSlam.getInstance();
         StatisticalFolder statisticalFolder = StatisticalFolder.getInstance();
 
         //Initialize the services
-        TimeService timeService = new TimeService(config.getTickTime(), config.getDuration());
+        TimeService timeService = new TimeService(config.getTickTime() * 1000, config.getDuration());
         PoseService poseService = new PoseService(gpsimu);
-        //FusionSlamService fusionSlamService = new FusionSlamService();
+        FusionSlamService fusionSlamService = new FusionSlamService();
 
         MessageBusImpl messageBus = MessageBusImpl.getInstance();
 
@@ -72,32 +73,32 @@ public class GurionRockRunner {
 
 /*Project to do and updates list
 
--Messages: Complete, there might be some extra fields that we wont need
-
--Objects:
-    Complete:
-        Camera related: DetectedObject, StampedDetectObject, Camera
-        LiDar related: CloudPoint, TrackedObject, LiDarWorkerTracker
-    Need to look into:
-        StampedCloudPoints - Unsure if the list in line 13 is a list<cloud points>, or list<list<doubles>> - page 17 of the assignment
-    ================================
-    Didnt touch: needs work
-        Fusion related: Landmark, FusionSLAM
-        Pose related: Pose, GPSIMU
-        Statistical Folder
-        LiDARDataBase
-
 -Services:
     TimeService: Mostly done, just need to make sure what happens once it terminates - line 41-42: send something?
+                           Check if time is in milliseconds or seconds
+
     CameraService: Mostly done. Need to figure out lines 47,49
-    ===============================
-    LiDarService: started working. Lines 57-64 need to have the whole handling of the DetectObjectEvent.
-                                                                        line 63: is it <= or ==?               
-    ===============================
-    FusionSlamService: Didnt touch, only added the relevent registers
-    PoseService: Didnt touch, only added the relevent registers
-    ErrorHandling (page 21): didnt do
+
+    LiDarService: line 63: is it <= or ==?               
+    
+    FusionSlamService: 
+
+    PoseService: 
+
+- ErrorHandling (page 21): didnt do
 
 More changes and to do:
-- changed a little in the 'run' method of microService: added unregister and broadcast
+*/
+
+
+/* Notes on lidar worker process
+We need to do several things here.
+1. For every event, we need to go over obj.getDetectedObjects() and do ____ with it and the dataBase
+    a. the database should be read from a lidar_data.json file thats given to us, like in the examples folder
+2. with the result of this operation, we need to:
+    a. send a TrackedObjectEvent to fusionSLAM
+        -SendEvent gets back a future - do we need to do something with it?
+    b. save the results into lastTrackedObjects in LiDarWorkerTracker - a field of the last objects that were tracked
+3. Complete the event we just solved - the WDetectObjectsEvent. We need to do a complete to it
+4. save the results into the dataBase
 */

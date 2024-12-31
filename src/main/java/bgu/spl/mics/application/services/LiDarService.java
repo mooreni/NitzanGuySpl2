@@ -61,21 +61,11 @@ public class LiDarService extends MicroService {
                 List<TrackedObject> trackedObjects = trackObjects();
                 if(trackedObjects.size() > 0){
                     liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
+                    LiDarDataBase.getInstance().setLastTrackedObjects(trackedObjects);
                     sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
                     StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
                 }
-                /*
-                We need to do several things here.
-                1. For every event, we need to go over obj.getDetectedObjects() and do ____ with it and the dataBase
-                    a. the database should be read from a lidar_data.json file thats given to us, like in the examples folder
-                2. with the result of this operation, we need to:
-                    a. send a TrackedObjectEvent to fusionSLAM
-                        -SendEvent gets back a future - do we need to do something with it?
-                    b. save the results into lastTrackedObjects in LiDarWorkerTracker - a field of the last objects that were tracked
-                3. Complete the event we just solved - the WDetectObjectsEvent. We need to do a complete to it
-                ///////// DONE UNTIL HERE ///////// 
-                c. save the results into the dataBase - ?
-                */
+
             }        
         });
         subscribeEvent(DetectObjectsEvent.class, detectObjectMessage ->{
@@ -89,6 +79,7 @@ public class LiDarService extends MicroService {
                 List<TrackedObject> trackedObjects = trackObjects();
                 if(trackedObjects.size() > 0){
                     liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
+                    LiDarDataBase.getInstance().setLastTrackedObjects(trackedObjects);
                     sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
                 }
             }
@@ -129,3 +120,4 @@ public class LiDarService extends MicroService {
         return trackedObjects;
     }
 }
+
