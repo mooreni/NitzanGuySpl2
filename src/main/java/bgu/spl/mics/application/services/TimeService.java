@@ -2,7 +2,11 @@ package bgu.spl.mics.application.services;
 
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.TickBroadcast;
+import bgu.spl.mics.application.messages.CrashedBroadcast;
+import bgu.spl.mics.application.messages.DetectObjectsEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
+import bgu.spl.mics.application.objects.STATUS;
+import bgu.spl.mics.application.objects.StampedDetectedObjects;
 import bgu.spl.mics.application.objects.StatisticalFolder;
 
 /**
@@ -33,20 +37,33 @@ public class TimeService extends MicroService {
      */
     @Override
     protected void initialize() {
-        //While we didnt reach the number of ticks needed, we send broadcasts 
-        while(currentTick <= duration){
+        //For every tick received, we will sleep for the tickTime and send another tick
+        subscribeBroadcast(TickBroadcast.class, tickMessage ->{
             try{
-                sendBroadcast(new TickBroadcast(currentTick));
-                StatisticalFolder.getInstance().increaseSystemRuntime();
-                currentTick = currentTick++;
-                Thread.sleep(tickTime);
-                //Will go out into the run function in MicroService, where we broadCast termination
-                 
-            }catch(InterruptedException e){
+                Thread.sleep(tickTime*1000);
+            } catch (InterruptedException e){
                 Thread.currentThread().interrupt();
+                terminate();
             }
-        }
-        terminate();
-        sendBroadcast(new TerminatedBroadcast(getName()));
+            currentTick++;
+            StatisticalFolder.getInstance().increaseSystemRuntime();
+            if(currentTick == duration){
+                sendBroadcast(new TerminatedBroadcast(getName()));
+                terminate();
+            }
+            sendBroadcast(new TickBroadcast(currentTick));
+
+        });
+        //Send first tick
+        sendBroadcast(new TickBroadcast(currentTick));
+
+        //Terminate early if fusionslam terminated
+        subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
+            if(terminateMessage.getSenderName().equals("FusionSlam")){
+                terminate();
+            }
+        });
+        //If one of the services crashed, terminate too
+        subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());
     }
 }
