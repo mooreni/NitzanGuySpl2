@@ -79,7 +79,15 @@ public class FusionSlamService extends MicroService {
             complete(poseMessage, true);
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
-            terminate();
+            if((terminateMessage.getSenderName().compareTo("CameraService") == 0)||
+                (terminateMessage.getSenderName().compareTo("LiDARService") == 0)||
+                (terminateMessage.getSenderName().compareTo("Pose") == 0)){
+                fusionSlam.decrementSensorsCount();
+            }
+            if(fusionSlam.getSensorsCount() == 0){
+                sendBroadcast(new TerminatedBroadcast(getName()));
+                terminate();
+            }
         });
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
             terminate();

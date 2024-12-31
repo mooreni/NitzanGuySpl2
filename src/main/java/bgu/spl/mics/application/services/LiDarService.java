@@ -82,6 +82,11 @@ public class LiDarService extends MicroService {
                     LiDarDataBase.getInstance().setLastTrackedObjects(trackedObjects);
                     sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
                 }
+                if(liDarDataBase.getSentObjectsCount() == liDarDataBase.getStampedCloudPoints().size()){
+                    sendBroadcast(new TerminatedBroadcast(getName()));
+                    liDarWorkerTracker.setStatus(STATUS.DOWN);
+                    terminate();
+                }
             }
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
@@ -107,6 +112,7 @@ public class LiDarService extends MicroService {
                     TrackedObject trackedObject = new TrackedObject(detectedObject.getID(), currentTick, detectedObject.getDescription(),
                                                     liDarDataBase.searchCoordinates(detectedObject, currentTick));
                     trackedObjects.add(trackedObject);
+                    liDarDataBase.increaseSentObjectsCount();
                 }
                 //Completes the event the camera sent
                 complete(currentEvent, true);
@@ -121,5 +127,6 @@ public class LiDarService extends MicroService {
         }
         return trackedObjects;
     }
+    
 }
 

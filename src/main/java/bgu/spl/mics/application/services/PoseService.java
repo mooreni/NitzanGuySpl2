@@ -41,6 +41,12 @@ public class PoseService extends MicroService {
                 int currentTick = tickMessage.getTickTime();
                 List<Pose> poseList = gpsimu.getPoseList();
                 sendEvent(new PoseEvent(getName(), poseList.get(currentTick-1), currentTick));
+                gpsimu.incrementSentPosesCounter();
+            }
+            if(gpsimu.getSentPosesCounter() == gpsimu.getPoseList().size()){
+                sendBroadcast(new CrashedBroadcast(getName()));
+                gpsimu.setStatus(STATUS.DOWN);
+                terminate();
             }
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{

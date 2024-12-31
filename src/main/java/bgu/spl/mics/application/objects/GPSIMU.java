@@ -17,12 +17,14 @@ public class GPSIMU {
     private int currTime;
     private STATUS status;
     private List<Pose> poseList;
+    private int sentPosesCounter;
 
     public GPSIMU(String filePath){
         currTime = 0;
         status = STATUS.UP;
         poseList = new ArrayList<>();
         this.loadData(filePath);
+        sentPosesCounter = 0;
     }
 
     public GPSIMU(int currTime, STATUS status, List<Pose> poseList, String filePath){
@@ -30,12 +32,14 @@ public class GPSIMU {
         this.poseList = poseList;
         this.status = status;
         this.loadData(filePath);
+        sentPosesCounter = 0;
     }
 
     public GPSIMU(){
         currTime = 0;
         poseList = new ArrayList<>();
         status = STATUS.UP;
+        sentPosesCounter = 0;
     }
 
     public STATUS getStatus(){
@@ -64,5 +68,16 @@ public class GPSIMU {
         }
     }
 
+    public void incrementSentPosesCounter(){
+        sentPosesCounter++;
+    }
+    
+    public void setStatus(STATUS status){
+        this.status = status;
+    }
+
+    public int getSentPosesCounter(){
+        return sentPosesCounter;
+    }
 
 }

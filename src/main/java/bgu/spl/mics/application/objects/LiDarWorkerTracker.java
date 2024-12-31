@@ -69,5 +69,8 @@ public class LiDarWorkerTracker {
         return liDarService;
     }
 
+    public void setStatus(STATUS status){
+        this.status = status;
+    }
 
 }
