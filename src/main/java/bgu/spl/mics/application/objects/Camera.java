@@ -96,4 +96,8 @@ public class Camera {
     public void setStampedDetectedObjects(List<StampedDetectedObjects> objs){
         stampedDetectedObjects = objs;
     }
+
+    public void setStatus(STATUS status){
+        this.status=status;
+    }
 }

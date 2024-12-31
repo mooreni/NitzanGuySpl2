@@ -6,6 +6,7 @@ import bgu.spl.mics.application.messages.DetectObjectsEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Camera;
+import bgu.spl.mics.application.objects.DetectedObject;
 import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
 import bgu.spl.mics.application.objects.StatisticalFolder;
@@ -47,6 +48,15 @@ public class CameraService extends MicroService {
             else{
                 currentTick = tickMessage.getTickTime();
                 for(StampedDetectedObjects obj : camera.getStampedDetectedObjects()){
+                    if(obj.getDetectionTime() == currentTick){
+                        for(DetectedObject detectedObject : obj.getDetectedObjects()){
+                            if(detectedObject.getID().equals("ERROR")){
+                                camera.setStatus(STATUS.ERROR);
+                                sendBroadcast(new CrashedBroadcast(getName()));
+                                terminate();
+                            }
+                        }
+                    }
                     //If there is data from time T, we will send it when we get to T+Frequency
                     if(obj.getDetectionTime()+camera.getFrequency() == currentTick){
                         //Send event gets back a future - do we need to do something with it?
