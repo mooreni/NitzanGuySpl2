@@ -22,6 +22,7 @@ public class Camera {
     private STATUS status;
     private List<StampedDetectedObjects> stampedDetectedObjects;
     private String camera_key;
+    private int sentObjectsCount;
 
     //I think these field makes sense to have for each camera?
     private CameraService cameraService;
@@ -95,5 +96,17 @@ public class Camera {
 
     public void setStampedDetectedObjects(List<StampedDetectedObjects> objs){
         stampedDetectedObjects = objs;
+    }
+
+    public void increaseSentObjectsCount(){
+        sentObjectsCount++;
+    }
+
+    public int getSentObjectsCount(){
+        return sentObjectsCount;
+    }   
+
+    public void setStatus(STATUS status){
+        this.status = status;
     }
 }

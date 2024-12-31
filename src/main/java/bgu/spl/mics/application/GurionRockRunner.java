@@ -56,6 +56,7 @@ public class GurionRockRunner {
         LiDarDataBase lidarDataBase = LiDarDataBase.getInstance(lidarDataPath.toString());
         GPSIMU gpsimu = new GPSIMU(poseDataPath.toString());
         FusionSlam fusionSlam = FusionSlam.getInstance();
+        fusionSlam.setSensorsCount(cameras.size() + lidarWorkers.size() + 1);
         StatisticalFolder statisticalFolder = StatisticalFolder.getInstance();
 
         //Initialize the services

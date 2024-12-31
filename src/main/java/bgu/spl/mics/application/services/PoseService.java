@@ -45,8 +45,8 @@ public class PoseService extends MicroService {
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
             //If the service that terminates was the time service, terminate too
-            if(terminateMessage.getSenderName().compareTo("TimeService") ==0){
-                sendBroadcast(new TerminatedBroadcast(getName()));
+            if((terminateMessage.getSenderName().compareTo("TimeService") ==0) ||
+                (terminateMessage.getSenderName().compareTo("FusionSlam") ==0)){
                 terminate();
             }
         });

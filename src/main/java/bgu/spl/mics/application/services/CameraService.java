@@ -51,13 +51,22 @@ public class CameraService extends MicroService {
                     if(obj.getDetectionTime()+camera.getFrequency() == currentTick){
                         //Send event gets back a future - do we need to do something with it?
                         sendEvent(new DetectObjectsEvent(getName(), obj, currentTick));
+                        camera.increaseSentObjectsCount();
                         StatisticalFolder.getInstance().increaseNumDetectedObjects(obj.getDetectedObjects().size());
                     }
+                }
+                if (camera.getSentObjectsCount() == camera.getStampedDetectedObjects().size()) {
+                    sendBroadcast(new TerminatedBroadcast(getName()));
+                    camera.setStatus(STATUS.DOWN);
+                    terminate();
                 }
             }
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
+            if((terminateMessage.getSenderName().compareTo("TimeService") ==0) ||
+                (terminateMessage.getSenderName().compareTo("FusionSlam") ==0)){
                 terminate();
+            }
         });
         //If one of the services crashed, terminate too
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());
