@@ -19,6 +19,7 @@ public class LiDarWorkerTracker {
     //I think these field makes sense to have for each camera?
     private LiDarService liDarService;
     private Thread thread;
+    private String error = "LiDar sensor disconnected";
 
     public LiDarWorkerTracker(){
         this.id=0;
@@ -42,6 +43,7 @@ public class LiDarWorkerTracker {
     }
 
     public void startRunning(){
+        System.out.println(thread.getName() + getSensorName());
         thread.start();
     }
 
@@ -73,4 +75,11 @@ public class LiDarWorkerTracker {
         this.status = status;
     }
 
+    public String getSensorName(){
+        return "LiDarWorkerTracker" + id;
+    }
+
+    public String getError(){
+        return error;
+    }
 }

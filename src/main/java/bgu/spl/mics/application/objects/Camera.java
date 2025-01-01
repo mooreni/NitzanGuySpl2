@@ -23,6 +23,8 @@ public class Camera {
     private List<StampedDetectedObjects> stampedDetectedObjects;
     private String camera_key;
     private int sentObjectsCount;
+    private String error;
+    private StampedDetectedObjects lastStampedDetectedObjects;
 
     //I think these field makes sense to have for each camera?
     private CameraService cameraService;
@@ -37,6 +39,9 @@ public class Camera {
         //I think thats how its meant to be done
         this.cameraService= new CameraService(this);
         this.thread = new Thread(cameraService);
+        this.sentObjectsCount=0;
+        this.lastStampedDetectedObjects = null;
+        this.error="";
 
     }
 
@@ -50,6 +55,9 @@ public class Camera {
         //I think thats how its meant to be done
         this.cameraService= new CameraService(this);
         this.thread = new Thread(cameraService);
+        this.sentObjectsCount=0;
+        this.lastStampedDetectedObjects = null;
+        this.error="";
     }
 
     public void loadData(String filePath){
@@ -67,6 +75,7 @@ public class Camera {
     }
 
     public void startRunning(){
+        System.out.println(thread.getName() + camera_key);
         thread.start();
     }
 
@@ -108,5 +117,21 @@ public class Camera {
 
     public void setStatus(STATUS status){
         this.status = status;
+    }
+
+    public String getError(){
+        return error;
+    }
+
+    public StampedDetectedObjects getLastStampedDetectedObjects(){
+        return lastStampedDetectedObjects;
+    }
+
+    public void setLastStampedDetectedObjects(StampedDetectedObjects lastStampedDetectedObjects){
+        this.lastStampedDetectedObjects = lastStampedDetectedObjects;
+    }
+
+    public void setError(String error){
+        this.error = error;
     }
 }

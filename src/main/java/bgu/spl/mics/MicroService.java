@@ -2,8 +2,6 @@ package bgu.spl.mics;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import bgu.spl.mics.application.messages.TerminatedBroadcast;
-
 
 
 /* We need to further understand:

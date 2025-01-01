@@ -7,6 +7,7 @@ import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.objects.Camera;
 import bgu.spl.mics.application.objects.DetectedObject;
+import bgu.spl.mics.application.objects.FusionSlam;
 import bgu.spl.mics.application.objects.STATUS;
 import bgu.spl.mics.application.objects.StampedDetectedObjects;
 import bgu.spl.mics.application.objects.StatisticalFolder;
@@ -42,7 +43,9 @@ public class CameraService extends MicroService {
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
             if(camera.getStatus()==STATUS.ERROR){
-                sendBroadcast(new CrashedBroadcast(getName()));
+                // Before crashing, sends to the fusionSlam the last stamped detected objects
+                FusionSlam.getInstance().getLastFrames().add(camera.getLastStampedDetectedObjects());
+                sendBroadcast(new CrashedBroadcast(getName(), camera.getError(), camera.getCameraKey()));
                 terminate();
             }
             else{
@@ -52,9 +55,16 @@ public class CameraService extends MicroService {
                     if(obj.getDetectionTime() == currentTick){
                         for(DetectedObject detectedObject : obj.getDetectedObjects()){
                             if(detectedObject.getID().equals("ERROR")){
+                                System.out.println("CameraService: Error detected");
                                 camera.setStatus(STATUS.ERROR);
-                                sendBroadcast(new CrashedBroadcast(getName()));
+                                camera.setError(detectedObject.getDescription());
+                                // Before crashing, sends to the fusionSlam the last stamped detected objects
+                                FusionSlam.getInstance().getLastFrames().add(camera.getLastStampedDetectedObjects());
+                                System.out.println("CameraService: sent last frames to fusionSlam");
+                                sendBroadcast(new CrashedBroadcast(getName(), camera.getError(), camera.getCameraKey()));
+                                System.out.println("CameraService: sent broadcast");
                                 terminate();
+                                System.out.println("CameraService: terminated");
                                 return;
                             }
                         }
@@ -63,16 +73,17 @@ public class CameraService extends MicroService {
                     //If there is data from time T, we will send it when we get to T+Frequency
                     if(obj.getDetectionTime()+camera.getFrequency() == currentTick){
                         //Send event gets back a future - do we need to do something with it?
-                        //System.out.println("CameraService:" + camera.getSentObjectsCount());
+                        System.out.println("CameraService:" + camera.getSentObjectsCount());
                         sendEvent(new DetectObjectsEvent(getName(), obj, currentTick));
+                        camera.setLastStampedDetectedObjects(obj); // Save the last stamped detected objects
                         camera.increaseSentObjectsCount();
                         StatisticalFolder.getInstance().increaseNumDetectedObjects(obj.getDetectedObjects().size());
                     }
                 }
                 //If we sent all the objects, terminate
                 if (camera.getSentObjectsCount() == camera.getStampedDetectedObjects().size()) {
-                    sendBroadcast(new TerminatedBroadcast(getName()));
                     camera.setStatus(STATUS.DOWN);
+                    sendBroadcast(new TerminatedBroadcast(getName()));
                     terminate();
                 }
             }
@@ -84,6 +95,11 @@ public class CameraService extends MicroService {
             }
         });
         //If one of the services crashed, terminate too
-        subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());
+        subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
+            // Before crashing, sends to the fusionSlam the last stamped detected objects
+            FusionSlam.getInstance().getLastFrames().add(camera.getLastStampedDetectedObjects());
+            sendBroadcast(new CrashedBroadcast(getName(), camera.getError(), camera.getCameraKey()));
+            terminate();
+        });
     }
 }

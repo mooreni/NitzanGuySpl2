@@ -34,21 +34,23 @@ public class PoseService extends MicroService {
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
             if(gpsimu.getStatus()==STATUS.ERROR){
-                sendBroadcast(new CrashedBroadcast(getName()));
+                sendBroadcast(new CrashedBroadcast(getName(), "", ""));
                 terminate();
             }
             else{
                 int currentTick = tickMessage.getTickTime();
                 List<Pose> poseList = gpsimu.getPoseList();
+                System.out.println("Sending PoseEvent at tick " + currentTick);
                 sendEvent(new PoseEvent(getName(), poseList.get(currentTick-1), currentTick));
                 gpsimu.incrementSentPosesCounter();
             }
             
-            if(gpsimu.getSentPosesCounter() == gpsimu.getPoseList().size()){
+            if(gpsimu.getSentPosesCounter() >= gpsimu.getPoseList().size()){
                 sendBroadcast(new TerminatedBroadcast(getName()));
                 gpsimu.setStatus(STATUS.DOWN);
                 terminate();
             }
+            
         });
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
             //If the service that terminates was the time service, terminate too
@@ -57,6 +59,9 @@ public class PoseService extends MicroService {
                 terminate();
             }
         });
-        subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> terminate());
+        subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
+            sendBroadcast(new CrashedBroadcast(getName(), "", "")); 
+            terminate();
+            });
     }
 }

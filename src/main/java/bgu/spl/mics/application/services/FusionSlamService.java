@@ -1,20 +1,15 @@
 package bgu.spl.mics.application.services;
 
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Iterator;
-
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrackedObjectsEvent;
-import bgu.spl.mics.application.objects.CloudPoint;
 import bgu.spl.mics.application.objects.FusionSlam;
 import bgu.spl.mics.application.objects.Pose;
 import bgu.spl.mics.application.objects.TrackedObject;
-import bgu.spl.mics.application.objects.LandMark;
 
 /**
  * FusionSlamService integrates data from multiple sensors to build and update
@@ -26,6 +21,8 @@ import bgu.spl.mics.application.objects.LandMark;
 public class FusionSlamService extends MicroService {
     private FusionSlam fusionSlam;
     private boolean didTimeTerminate;
+    private String error;
+    private String faultySensor;
     /**
      * Constructor for FusionSlamService.
      *
@@ -35,7 +32,8 @@ public class FusionSlamService extends MicroService {
         super("FusionSlam");
         this.fusionSlam = FusionSlam.getInstance();
         didTimeTerminate = false;
-        // TODO Implement this - do we need to add something else?
+        error = "";
+        faultySensor = "";
     }
 
     
@@ -71,10 +69,12 @@ public class FusionSlamService extends MicroService {
         subscribeEvent(PoseEvent.class, poseMessage ->{
             Pose pose = poseMessage.getPose();
             fusionSlam.addPose(pose);
+            System.out.println("FusionSlamService: PoseEvent received at tick " + pose.getTime());
             boolean exists = false;
             for(int i = 0; i < fusionSlam.getWaitingTrackedObjects().size()&&!exists; i++){
                 if(fusionSlam.getWaitingTrackedObjects().get(i).getTime() == pose.getTime()){
                     fusionSlam.updateGlobalMap(fusionSlam.getWaitingTrackedObjects().get(i));
+                    System.out.println("FusionSlamService: Landmark uploaded at tick " + pose.getTime());
                     fusionSlam.getWaitingTrackedObjects().remove(i);
                     exists = true;
                 }
@@ -109,7 +109,29 @@ public class FusionSlamService extends MicroService {
         });
 
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
-            terminate();
+            if((crashedMessage.getSenderName().compareTo("CameraService") == 0)||
+            (crashedMessage.getSenderName().compareTo("LiDarService") == 0)||
+            (crashedMessage.getSenderName().compareTo("Pose") == 0)){
+                fusionSlam.decrementSensorsCount();
+            }
+            System.out.println("FusionSlamService: " + crashedMessage.getSenderName() + " crashed");
+            System.out.println("FusionSlamService: " + fusionSlam.getSensorsCount() + " sensors left");
+
+            // Sets the error message and faulty sensor for the first crash
+            if(error.compareTo("") == 0){
+                error = crashedMessage.getError();
+                faultySensor = crashedMessage.getFaultySensor();
+                System.out.println("FusionSlamService: Error detected in " + faultySensor);
+            }
+            // Should we regard the time service?
+            // Waits for everyone to crash, then creates the error output and terminates
+            if(fusionSlam.getSensorsCount() == 0){
+                System.out.println("FusionSlamService: All sensors crashed");
+                fusionSlam.createErrorOutput(error, faultySensor, fusionSlam.getLastFrames());
+                System.out.println("FusionSlamService: Error output created");
+                terminate();
+                System.out.println("FusionSlamService: Terminated");
+            }
         });    
     }
 }

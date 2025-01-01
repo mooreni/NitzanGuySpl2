@@ -71,12 +71,15 @@ public class GurionRockRunner {
             lidarWorker.startRunning();
         }
         Thread t1 = new Thread(poseService);
+        System.out.println(t1.getName() + "poseService");
         t1.start();
 
         Thread t2 = new Thread(fusionSlamService);
+        System.out.println(t2.getName() + "fusionService");
         t2.start();
 
         Thread t3 = new Thread(timeService);
+        System.out.println(t3.getName() + "timeService");
         t3.start();
 
         // TODO: Start the simulation.

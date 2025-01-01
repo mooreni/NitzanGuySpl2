@@ -11,6 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import bgu.spl.mics.application.ErrorOutput;
 
 /**
  * Manages the fusion of sensor data for simultaneous localization and mapping (SLAM).
@@ -28,6 +29,7 @@ public class FusionSlam {
     private List<TrackedObject> waitingTrackedObjects;
     private int sensorsCount;
     private String path; //Path to output folder
+    private List<Object> lastFrames; //The last frames of the sensors
     /**
      * Retrieves the single instance of FusionSlam.
      *
@@ -50,6 +52,8 @@ public class FusionSlam {
         globalMap = new ArrayList<>();
         waitingTrackedObjects = new ArrayList<>();
         sensorsCount = 0;
+        lastFrames = new ArrayList<>();
+        path = "";
 
     }
 
@@ -88,30 +92,42 @@ public class FusionSlam {
         return previousRobotPoses;
     }
     
-    public List<CloudPoint> averageCloudPoints(List<CloudPoint> list1, List<CloudPoint> list2) {
-        // Check if the lists are of the same length
-        if (list1.size() != list2.size()) {
-            throw new IllegalArgumentException("Both lists must have the same length.");
-        }
-
+    public List<CloudPoint> averageCloudPoints(List<CloudPoint> oldList, List<CloudPoint> newList) { 
         // Create a new list to store the averaged CloudPoints
         List<CloudPoint> averagedList = new ArrayList<>();
-
+    
+        int minSize = Math.min(oldList.size(), newList.size());  // Determine the minimum size of the two lists
+    
         // Iterate through both lists, average the corresponding points, and add to the result list
-        for (int i = 0; i < list1.size(); i++) {
-            CloudPoint point1 = list1.get(i);
-            CloudPoint point2 = list2.get(i);
-
+        for (int i = 0; i < minSize; i++) {
+            CloudPoint point1 = oldList.get(i);
+            CloudPoint point2 = newList.get(i);
+    
             // Calculate the average x and y coordinates
             Double avgX = (point1.getX() + point2.getX()) / 2;
             Double avgY = (point1.getY() + point2.getY()) / 2;
-
+    
             // Add the averaged point to the result list
             averagedList.add(new CloudPoint(avgX, avgY));
         }
-
+    
+        // If newList is larger, add the remaining points from newList
+        if (newList.size() > oldList.size()) {
+            for (int i = minSize; i < newList.size(); i++) {
+                averagedList.add(newList.get(i));  // Add the extra points from newList as is
+            }
+        }
+    
+        // If oldList is larger, add the remaining points from oldList
+        if (oldList.size() > newList.size()) {
+            for (int i = minSize; i < oldList.size(); i++) {
+                averagedList.add(oldList.get(i));  // Add the extra points from oldList as is
+            }
+        }
+    
         return averagedList;
     }
+    
 
     public void updateGlobalMap(TrackedObject trackedObject) {
         List<CloudPoint> cloudPoints = trackedObject.getCloudCoordinates();
@@ -168,19 +184,25 @@ public class FusionSlam {
         toJson(output);
     }
 
-    //public void createErrorOutput(){
-        //ErrorOutput output = new ErrorOutput();
-        //toJson(output);
-    //}
+    public void createErrorOutput(String error, String faultySensor, List<Object> lastFrames){
+        StatisticalFolder folder = StatisticalFolder.getInstance();
+        ErrorOutput output = new ErrorOutput(folder.getSystemRuntime(), folder.getNumDetectedObjects(), folder.getNumTrackedObjects(),
+                                                folder.getNumLandmarks(), getGlobalMap(), error ,faultySensor, lastFrames, getPreviousRobotPoses());
+        toJson(output);
+    }
 
     //Recieves the output json - of EITHER TYPE! I think it can recieve both normalOutput file or errorOutput file
     public void toJson(Object output) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        try (FileWriter writer = new FileWriter(path + "/outputTest.json")) {
+        try (FileWriter writer = new FileWriter(path + "/output_file.json")) {
             // Serialize Java objects to JSON file
             gson.toJson(output, writer);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public List<Object> getLastFrames() {
+        return lastFrames;
     }
 }
