@@ -33,8 +33,6 @@ public class GurionRockRunner {
      * @param args Command-line arguments. The first argument is expected to be the path to the configuration file.
      */
     public static void main(String[] args) {
-        System.out.println("Hello World!");
-
         Path configAbsolutePath = Paths.get(args[0]).toAbsolutePath();
         ApplicationConfig config = ParserConfig.parseConfig(configAbsolutePath.toString());
 

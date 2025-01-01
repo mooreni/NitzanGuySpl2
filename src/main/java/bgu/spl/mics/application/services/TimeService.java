@@ -51,15 +51,18 @@ public class TimeService extends MicroService {
                 return;
             }
             sendBroadcast(new TickBroadcast(currentTick));
-            //System.out.println("Tick "+currentTick);
+            System.out.println("Tick "+currentTick);
 
         });
         //Send first tick
+        System.out.println("Tick "+currentTick);
         sendBroadcast(new TickBroadcast(currentTick));
+        StatisticalFolder.getInstance().increaseSystemRuntime();
 
         //Terminate early if fusionslam terminated
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
             if(terminateMessage.getSenderName().equals("FusionSlam")){
+                sendBroadcast(new TerminatedBroadcast(getName()));
                 terminate();
             }
         });
@@ -69,10 +72,3 @@ public class TimeService extends MicroService {
         });
     }
 }
-
-
-/*              {
-    "id": "ERROR",
-    "description": "GLaDOS has repurposed the robot to conduct endless cake-fetching tests. Success is a lie."
-},
-*/

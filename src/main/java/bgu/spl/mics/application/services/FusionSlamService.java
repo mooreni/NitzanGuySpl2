@@ -25,6 +25,7 @@ import bgu.spl.mics.application.objects.LandMark;
  */
 public class FusionSlamService extends MicroService {
     private FusionSlam fusionSlam;
+    private boolean didTimeTerminate;
     /**
      * Constructor for FusionSlamService.
      *
@@ -33,6 +34,7 @@ public class FusionSlamService extends MicroService {
     public FusionSlamService() {
         super("FusionSlam");
         this.fusionSlam = FusionSlam.getInstance();
+        didTimeTerminate = false;
         // TODO Implement this - do we need to add something else?
     }
 
@@ -47,9 +49,9 @@ public class FusionSlamService extends MicroService {
     protected void initialize() {
 
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
+            //If everyone finished except timeService, notify timeService to finish
             if (fusionSlam.getSensorsCount()==0){
                 sendBroadcast(new TerminatedBroadcast(getName()));
-                terminate();
             }
         });
         
@@ -86,12 +88,24 @@ public class FusionSlamService extends MicroService {
                 (terminateMessage.getSenderName().compareTo("Pose") == 0)){
                 fusionSlam.decrementSensorsCount();
             }
-            if(fusionSlam.getSensorsCount() == 0){
-                sendBroadcast(new TerminatedBroadcast(getName()));
+
+            if(terminateMessage.getSenderName().compareTo("TimeService") == 0){
+                didTimeTerminate = true;
+            }
+
+            //In case everyone finished, including timeService, terminate and output
+            if(didTimeTerminate==true && fusionSlam.getSensorsCount() == 0){
                 terminate();
                 fusionSlam.createNormalOutput();
             }
 
+            //If everyone finished except timeService, notify timeService to finish
+            else if(didTimeTerminate==false && fusionSlam.getSensorsCount() == 0){
+                sendBroadcast(new TerminatedBroadcast(getName()));
+            }
+
+            //Else: if the time service finished, the rest will recieve the broadcast from timeService and finish too eventually
+            //      if the time service didnt finish and only some finished too, continue as well
         });
 
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
