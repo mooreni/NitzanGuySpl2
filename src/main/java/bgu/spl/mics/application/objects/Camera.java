@@ -4,6 +4,9 @@ package bgu.spl.mics.application.objects;
 import java.util.List;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
+import bgu.spl.mics.application.messages.DetectObjectsEvent;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -46,6 +49,31 @@ public class Camera {
         this.sentObjectsCount=0;
         this.lastStampedDetectedObjects = null;
         this.error="";
+    }
+
+    //Recieves the current tick and checks if there is an error, or if it needs to send a DetectObjectsEvent
+    public StampedDetectedObjects checkCurrentTick(int currentTick){
+        for(StampedDetectedObjects obj : stampedDetectedObjects){
+            if(obj.getDetectionTime() > currentTick){
+                return null;
+            }
+            //Checks for error in current tick
+            if(obj.getDetectionTime() == currentTick){
+                for(DetectedObject detectedObject : obj.getDetectedObjects()){
+                    if(detectedObject.getID().equals("ERROR")){
+                        setStatus(STATUS.ERROR);
+                        setError(detectedObject.getDescription());
+                        return null;
+                    }
+                }
+            }
+
+            //Checks if it needs to send DetectObjectsEvent
+            if(obj.getDetectionTime()+getFrequency() == currentTick){
+                return obj;
+            }
+        }
+        return null;
     }
 
     //Fills stampedDetectedObjects with all the data from the json

@@ -7,7 +7,6 @@ import bgu.spl.mics.application.messages.TerminatedBroadcast;
 import bgu.spl.mics.application.messages.TickBroadcast;
 import bgu.spl.mics.application.messages.TrackedObjectsEvent;
 import bgu.spl.mics.application.objects.DetectedObject;
-import bgu.spl.mics.application.objects.FusionSlam;
 import bgu.spl.mics.application.objects.LiDarDataBase;
 import bgu.spl.mics.application.objects.LiDarWorkerTracker;
 import bgu.spl.mics.application.objects.STATUS;
@@ -55,12 +54,6 @@ public class LiDarService extends MicroService {
         this.latch = latch;
     }
     
-    public void setLatch(CountDownLatch latch){
-        this.latch = latch;
-    }
-
-
-
 
     /**
      * Initializes the LiDarService.
@@ -71,12 +64,10 @@ public class LiDarService extends MicroService {
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
             if(liDarWorkerTracker.getStatus()==STATUS.ERROR){
-                // Before crashing, sends to the fusionSlam the last tracked objects
                 sendBroadcast(createCrashedBroadcast(liDarWorkerTracker.getLastTrackedObjects(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
                 terminate();
             }
             else{
-                //ifLidarFinished();
                 currentTick = tickMessage.getTickTime();
                 //Checks if the LiDarDataBase has an error at current time
                 if(liDarDataBase.checkForError(currentTick)){
@@ -88,21 +79,7 @@ public class LiDarService extends MicroService {
                 }
 
                 //Checks if the LiDarDataBase has new data at current time
-                List<TrackedObject> trackedObjects = trackObjects();
-                if(trackedObjects.size() > 0){
-                    System.out.println("LiDarService: amount of objects: " + trackedObjects.size() + ", detected time: " + trackedObjects.get(0).getTime());
-                    sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
-                    liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
-                    liDarDataBase.setLastTrackedObjects(trackedObjects);
-                    StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
-                }                
-                
-                //If we sent all the objects, terminate
-                if(liDarDataBase.getSentObjectsCount() == liDarDataBase.getStampedCloudPoints().size()){
-                    sendBroadcast(new TerminatedBroadcast(getName()));
-                    liDarWorkerTracker.setStatus(STATUS.DOWN);
-                    terminate();
-                }
+                trackObjects();
 
             }        
         });
@@ -114,21 +91,8 @@ public class LiDarService extends MicroService {
             }
             else{
                 oldEvents.add(detectObjectMessage);
-                //Checks if the new event already got processed and send it further
-                List<TrackedObject> trackedObjects = trackObjects();
-                if(trackedObjects.size() > 0){
-                    System.out.println("LiDarService: " + liDarDataBase.getSentObjectsCount());
-                    sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
-                    liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
-                    liDarDataBase.setLastTrackedObjects(trackedObjects);
-                    StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
-                }
-                //If we sent all the objects, terminate
-                if(liDarDataBase.getSentObjectsCount() == liDarDataBase.getStampedCloudPoints().size()){
-                    sendBroadcast(new TerminatedBroadcast(getName()));
-                    liDarWorkerTracker.setStatus(STATUS.DOWN);
-                    terminate();
-                }
+                trackObjects();
+
             }
         }); 
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
@@ -161,7 +125,7 @@ public class LiDarService extends MicroService {
 
 
     //Goes over all events and completes the relevant ones
-    private List<TrackedObject> trackObjects(){
+    private void trackObjects(){
         List<TrackedObject> trackedObjects = new ArrayList<>();
 
         //For every event the camera sent, we check if it needs to be processed based on the currentTick
@@ -187,11 +151,15 @@ public class LiDarService extends MicroService {
                 i--;
             }
         }
-        return trackedObjects;
-    }
 
-    public void ifLidarFinished(){
-        if(liDarDataBase.getSentObjectsCount() == liDarDataBase.getStampedCloudPoints().size()){
+        if(trackedObjects.size() > 0){
+            sendEvent(new TrackedObjectsEvent(getName(), trackedObjects, currentTick));
+            liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
+            liDarDataBase.setLastTrackedObjects(trackedObjects);
+            StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
+        }
+        //If we sent all the objects, terminate
+        if(liDarDataBase.isLidarFinished()){
             sendBroadcast(new TerminatedBroadcast(getName()));
             liDarWorkerTracker.setStatus(STATUS.DOWN);
             terminate();

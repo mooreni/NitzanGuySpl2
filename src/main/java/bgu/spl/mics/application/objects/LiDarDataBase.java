@@ -110,4 +110,8 @@ public class LiDarDataBase {
     public int getSentObjectsCount(){
         return sentObjectsCount.get();
     }
+
+    public boolean isLidarFinished(){
+        return sentObjectsCount.get() == cloudPoints.size();
+    }
 }
