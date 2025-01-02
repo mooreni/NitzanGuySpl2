@@ -1,6 +1,8 @@
 package bgu.spl.mics.application.services;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
@@ -22,7 +24,9 @@ public class FusionSlamService extends MicroService {
     private FusionSlam fusionSlam;
     private boolean didTimeTerminate;
     private String error;
-    private String faultySensor;
+    private String faultySensor;        
+    private CountDownLatch latch;
+
     /**
      * Constructor for FusionSlamService.
      *
@@ -34,6 +38,11 @@ public class FusionSlamService extends MicroService {
         didTimeTerminate = false;
         error = "";
         faultySensor = "";
+    }
+
+
+    public void setLatch(CountDownLatch latch){
+        this.latch = latch;
     }
 
     
@@ -133,5 +142,7 @@ public class FusionSlamService extends MicroService {
                 System.out.println("FusionSlamService: Terminated");
             }
         });    
+        latch.countDown();
+
     }
 }

@@ -1,5 +1,7 @@
 package bgu.spl.mics.application.services;
 
+import java.util.concurrent.CountDownLatch;
+
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.DetectObjectsEvent;
@@ -22,6 +24,7 @@ import bgu.spl.mics.application.objects.StatisticalFolder;
 public class CameraService extends MicroService {
     private Camera camera;
     private int currentTick;
+    private CountDownLatch latch;
     /**
      * Constructor for CameraService.
      *
@@ -32,6 +35,10 @@ public class CameraService extends MicroService {
         this.camera = camera;
         currentTick=0;
         // TODO Implement this - do we need to add something else?
+    }
+
+    public void setLatch(CountDownLatch latch){
+        this.latch = latch;
     }
 
     /**
@@ -101,5 +108,6 @@ public class CameraService extends MicroService {
             sendBroadcast(new CrashedBroadcast(getName(), camera.getError(), camera.getCameraKey()));
             terminate();
         });
+        latch.countDown();
     }
 }

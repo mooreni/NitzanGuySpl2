@@ -3,6 +3,7 @@ package bgu.spl.mics.application.objects;
 import bgu.spl.mics.application.services.CameraService;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -133,5 +134,9 @@ public class Camera {
 
     public void setError(String error){
         this.error = error;
+    }
+
+    public void setLatch(CountDownLatch latch){
+        cameraService.setLatch(latch);
     }
 }

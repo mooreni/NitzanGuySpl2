@@ -3,6 +3,7 @@ package bgu.spl.mics.application;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import bgu.spl.mics.application.objects.Camera;
 import bgu.spl.mics.application.objects.FusionSlam;
@@ -58,26 +59,39 @@ public class GurionRockRunner {
         StatisticalFolder statisticalFolder = StatisticalFolder.getInstance();
 
         //Initialize the services
+        CountDownLatch latch = new CountDownLatch(cameras.size() + lidarWorkers.size() + 2);
+
         TimeService timeService = new TimeService(config.getTickTime() * 1000, config.getDuration());
         PoseService poseService = new PoseService(gpsimu);
+        poseService.setLatch(latch);
         FusionSlamService fusionSlamService = new FusionSlamService();
+        fusionSlamService.setLatch(latch);
 
         MessageBusImpl messageBus = MessageBusImpl.getInstance();
 
+
         for(Camera camera: cameras){
             camera.startRunning();
+            camera.setLatch(latch);
         }
         for(LiDarWorkerTracker lidarWorker: lidarWorkers){
             lidarWorker.startRunning();
+            lidarWorker.setLatch(latch);
         }
         Thread t1 = new Thread(poseService);
         System.out.println(t1.getName() + "poseService");
         t1.start();
 
+
         Thread t2 = new Thread(fusionSlamService);
         System.out.println(t2.getName() + "fusionService");
         t2.start();
 
+        try{
+            latch.await();
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
         Thread t3 = new Thread(timeService);
         System.out.println(t3.getName() + "timeService");
         t3.start();

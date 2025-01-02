@@ -1,6 +1,7 @@
 package bgu.spl.mics.application.services;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import bgu.spl.mics.MicroService;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
@@ -15,6 +16,7 @@ import bgu.spl.mics.application.objects.*;
  */
 public class PoseService extends MicroService {
     private GPSIMU gpsimu;
+    private CountDownLatch latch;
     /**
      * Constructor for PoseService.
      *
@@ -24,6 +26,10 @@ public class PoseService extends MicroService {
         super("Pose");
         this.gpsimu = gpsimu;
         // TODO Implement this - do we need to add something else?
+    }
+
+    public void setLatch(CountDownLatch latch){
+        this.latch = latch;
     }
 
     /**
@@ -62,6 +68,7 @@ public class PoseService extends MicroService {
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
             sendBroadcast(new CrashedBroadcast(getName(), "", "")); 
             terminate();
-            });
+        });
+        latch.countDown();
     }
 }

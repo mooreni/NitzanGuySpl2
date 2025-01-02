@@ -2,6 +2,7 @@ package bgu.spl.mics.application.objects;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import bgu.spl.mics.application.services.LiDarService;
 
@@ -81,5 +82,9 @@ public class LiDarWorkerTracker {
 
     public String getError(){
         return error;
+    }
+
+    public void setLatch(CountDownLatch latch){
+        liDarService.setLatch(latch);
     }
 }

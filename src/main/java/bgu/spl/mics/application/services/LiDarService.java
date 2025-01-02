@@ -16,6 +16,7 @@ import bgu.spl.mics.application.objects.StatisticalFolder;
 import bgu.spl.mics.application.objects.TrackedObject;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.ArrayList;
 
 
@@ -32,6 +33,8 @@ public class LiDarService extends MicroService {
     private List<DetectObjectsEvent> oldEvents; //Saves up old DetectObject messages it got
     private int currentTick;
     private LiDarDataBase liDarDataBase = LiDarDataBase.getInstance(); 
+    private CountDownLatch latch;
+
     /**
      * Constructor for LiDarService.
      *
@@ -44,6 +47,13 @@ public class LiDarService extends MicroService {
         currentTick = 0;
         // TODO Implement this - do we need to add something else?
     }
+    
+    public void setLatch(CountDownLatch latch){
+        this.latch = latch;
+    }
+
+
+
 
     /**
      * Initializes the LiDarService.
@@ -129,6 +139,7 @@ public class LiDarService extends MicroService {
             sendBroadcast(new CrashedBroadcast(getName(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
             terminate();
         });    
+        latch.countDown();
     }
 
     //Goes over all events and completes the relevant ones
