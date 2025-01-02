@@ -64,13 +64,14 @@ public class MessageBusImpl implements MessageBus {
     }
 
 	@Override
+	//@pre: none
+	//@post: eventsSubs.get(type).contains(m) == true
 	public <T> void subscribeEvent(Class<? extends Event<T>> type, MicroService m) {
 		ConcurrentLinkedQueue<MicroService> q = eventsSubs.get(type);
 		//Locking the queue of the event we want to add to, so only m can register
 		synchronized(q){
 			q.offer(m);
 			q.notifyAll();
-			//eventsSubs.computeIfAbsent(type, k -> new ConcurrentLinkedQueue<>()).add(m);
 		}
 	}
 
@@ -81,16 +82,14 @@ public class MessageBusImpl implements MessageBus {
 		synchronized(q){
 			q.offer(m);
 			q.notifyAll();
-			//q.computeIfAbsent(type, k -> new ConcurrentLinkedQueue<>()).add(m);
 		}
 	} 
 
-	//I used the type of each future to be what i assumed was the fitting one, but i could be wrong.
-	//Need to check if cloudPoint, pose, and landmark are the right classes.
 	@Override
+	//@pre: eventsSubs.containsKey(e.getClass()) == true
+	//@post: eventsFutures.containsKey(e) == false
 	public <T> void complete(Event<T> e, T result) {
 		synchronized(eventsFutures){
-			// Unsafe casting, maybe there's a better idea
 			Future<T> f = (Future<T>)eventsFutures.get(e);
 			f.resolve(result);
 			eventsFutures.remove(e);
@@ -107,10 +106,6 @@ public class MessageBusImpl implements MessageBus {
 		// Otherwise, adds the message to the microService's queue
 		synchronized(q){
 			for(MicroService m : q){
-				//Do we need this? Maybe make sure to take them out of subs lists if unregistered
-				/* if(!(registeredServices.containsKey(m))){
-					q.remove(m);
-				}*/
 				ConcurrentLinkedQueue<Message> lst = registeredServices.get(m);
 				synchronized(lst){
 					lst.offer(b);
@@ -145,8 +140,10 @@ public class MessageBusImpl implements MessageBus {
 		}
 		return f;
 	}
-
+	
 	@Override
+	//@pre: none
+	//@post: registeredServices.containsKey(m) == true
 	public void register(MicroService m) {
 		// Adds the microService to the map with an empty queue that will contain m's messages
 		registeredServices.computeIfAbsent(m, k -> new ConcurrentLinkedQueue<>());
@@ -205,5 +202,9 @@ public class MessageBusImpl implements MessageBus {
 			}
 		}
 		return message;
+	}
+
+	public ConcurrentHashMap<Class<? extends Event<?>>, ConcurrentLinkedQueue<MicroService>> getEventsSubs() {
+		return eventsSubs;
 	}
 }
