@@ -52,7 +52,6 @@ public class TimeService extends MicroService {
             }
             sendBroadcast(new TickBroadcast(currentTick));
             System.out.println("Tick "+currentTick);
-
         });
         //Send first tick
         System.out.println("Tick "+currentTick);
@@ -68,6 +67,7 @@ public class TimeService extends MicroService {
         });
         //If one of the services crashed, terminate too
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage -> {
+            sendBroadcast(new CrashedBroadcast(getName()));
             terminate();
         });
     }

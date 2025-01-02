@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import bgu.spl.mics.MicroService;
+import bgu.spl.mics.application.ErrorOutput;
 import bgu.spl.mics.application.messages.CrashedBroadcast;
 import bgu.spl.mics.application.messages.PoseEvent;
 import bgu.spl.mics.application.messages.TerminatedBroadcast;
@@ -23,9 +24,8 @@ import bgu.spl.mics.application.objects.TrackedObject;
 public class FusionSlamService extends MicroService {
     private FusionSlam fusionSlam;
     private boolean didTimeTerminate;
-    private String error;
-    private String faultySensor;        
     private CountDownLatch latch;
+    private ErrorOutput errorOutput;
 
     /**
      * Constructor for FusionSlamService.
@@ -36,17 +36,15 @@ public class FusionSlamService extends MicroService {
         super("FusionSlam");
         this.fusionSlam = FusionSlam.getInstance();
         didTimeTerminate = false;
-        error = "";
-        faultySensor = "";
+        errorOutput = new ErrorOutput();   
     }
 
     public FusionSlamService(CountDownLatch latch) {
         super("FusionSlam");
         this.fusionSlam = FusionSlam.getInstance();
         didTimeTerminate = false;
-        error = "";
-        faultySensor = "";
         this.latch = latch;
+        errorOutput = new ErrorOutput();   
     }
 
     public void setLatch(CountDownLatch latch){
@@ -104,6 +102,7 @@ public class FusionSlamService extends MicroService {
                 (terminateMessage.getSenderName().compareTo("LiDarService") == 0)||
                 (terminateMessage.getSenderName().compareTo("Pose") == 0)){
                 fusionSlam.decrementSensorsCount();
+                System.out.println("Decreased sensor count " + terminateMessage.getSenderName());
             }
 
             if(terminateMessage.getSenderName().compareTo("TimeService") == 0){
@@ -131,23 +130,30 @@ public class FusionSlamService extends MicroService {
             (crashedMessage.getSenderName().compareTo("Pose") == 0)){
                 fusionSlam.decrementSensorsCount();
             }
+
+            if(crashedMessage.getSenderName().compareTo("TimeService") == 0){
+                didTimeTerminate = true;
+            }
             System.out.println("FusionSlamService: " + crashedMessage.getSenderName() + " crashed");
             System.out.println("FusionSlamService: " + fusionSlam.getSensorsCount() + " sensors left");
 
+
             // Sets the error message and faulty sensor for the first crash
-            if(error.compareTo("") == 0){
-                error = crashedMessage.getError();
-                faultySensor = crashedMessage.getFaultySensor();
-                System.out.println("FusionSlamService: Error detected in " + faultySensor);
+            if(crashedMessage.getError().compareTo("") != 0){
+                errorOutput.setError(crashedMessage.getError());
+                errorOutput.setFaultySensor(crashedMessage.getFaultySensor());
             }
-            // Should we regard the time service?
-            // Waits for everyone to crash, then creates the error output and terminates
-            if(fusionSlam.getSensorsCount() == 0){
-                System.out.println("FusionSlamService: All sensors crashed");
-                fusionSlam.createErrorOutput(error, faultySensor, fusionSlam.getLastFrames());
-                System.out.println("FusionSlamService: Error output created");
+
+            if(crashedMessage.getSenderName().compareTo("CameraService")==0){
+                errorOutput.addLastCamerasFrame(crashedMessage.getSensorName(), crashedMessage.getLastCamerasFrame());
+            }
+            else if(crashedMessage.getSenderName().compareTo("LiDarService")==0){
+                errorOutput.addLastLiDarWorkerTrackersFrame(crashedMessage.getSensorName(), crashedMessage.getLastLiDarWorkerTrackersFrame());
+            }
+
+            if(didTimeTerminate==true && fusionSlam.getSensorsCount() == 0){
+                fusionSlam.createErrorOutput(errorOutput);
                 terminate();
-                System.out.println("FusionSlamService: Terminated");
             }
         });    
         latch.countDown();

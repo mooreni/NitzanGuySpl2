@@ -72,19 +72,17 @@ public class LiDarService extends MicroService {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
             if(liDarWorkerTracker.getStatus()==STATUS.ERROR){
                 // Before crashing, sends to the fusionSlam the last tracked objects
-                FusionSlam.getInstance().getLastFrames().add(liDarWorkerTracker.getLastTrackedObjects());
-                sendBroadcast(new CrashedBroadcast(getName(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
+                sendBroadcast(createCrashedBroadcast(liDarWorkerTracker.getLastTrackedObjects(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
                 terminate();
             }
             else{
-                ifLidarFinished();
+                //ifLidarFinished();
                 currentTick = tickMessage.getTickTime();
                 //Checks if the LiDarDataBase has an error at current time
                 if(liDarDataBase.checkForError(currentTick)){
                     liDarWorkerTracker.setStatus(STATUS.ERROR);
                     // Before crashing, sends to the fusionSlam the last tracked objects
-                    FusionSlam.getInstance().getLastFrames().add(liDarWorkerTracker.getLastTrackedObjects());
-                    sendBroadcast(new CrashedBroadcast(getName(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
+                    sendBroadcast(createCrashedBroadcast(liDarWorkerTracker.getLastTrackedObjects(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
                     terminate();
                     return;
                 }
@@ -105,17 +103,13 @@ public class LiDarService extends MicroService {
                     liDarWorkerTracker.setStatus(STATUS.DOWN);
                     terminate();
                 }
-                //If we sent all the objects, terminate
-               ifLidarFinished();
-
 
             }        
         });
         subscribeEvent(DetectObjectsEvent.class, detectObjectMessage ->{
             if(liDarWorkerTracker.getStatus()==STATUS.ERROR){
                 // Before crashing, sends to the fusionSlam the last tracked objects
-                FusionSlam.getInstance().getLastFrames().add(liDarWorkerTracker.getLastTrackedObjects());
-                sendBroadcast(new CrashedBroadcast(getName(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
+                sendBroadcast(createCrashedBroadcast(liDarWorkerTracker.getLastTrackedObjects(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
                 terminate();
             }
             else{
@@ -144,13 +138,27 @@ public class LiDarService extends MicroService {
             }
         });
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{ 
-            // Before crashing, sends to the fusionSlam the last tracked objects
-            FusionSlam.getInstance().getLastFrames().add(liDarWorkerTracker.getLastTrackedObjects());
-            sendBroadcast(new CrashedBroadcast(getName(), liDarWorkerTracker.getError(), liDarWorkerTracker.getSensorName()));
+            sendBroadcast(createResponseCrashedBroadcast(liDarWorkerTracker.getLastTrackedObjects()));
             terminate();
         });    
         latch.countDown();
     }
+
+    private CrashedBroadcast createCrashedBroadcast(List<TrackedObject> lastTrackedObjects, String error, String faultySensor){
+        CrashedBroadcast b = createResponseCrashedBroadcast(lastTrackedObjects);
+        b.setFaultySensor(faultySensor);
+        b.setError(error);
+        return b;
+    }
+
+    private CrashedBroadcast createResponseCrashedBroadcast(List<TrackedObject> lastTrackedObjects){
+        CrashedBroadcast b = new CrashedBroadcast(getName());
+        b.setSensorName(liDarWorkerTracker.getSensorName());
+        b.setLastLiDarWorkerTrackersFrame(lastTrackedObjects);
+        return b;
+    }
+
+
 
     //Goes over all events and completes the relevant ones
     private List<TrackedObject> trackObjects(){

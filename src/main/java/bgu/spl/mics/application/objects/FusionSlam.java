@@ -149,10 +149,10 @@ public class FusionSlam {
     }
 
     //Creates a file that represents a crashed program
-    public void createErrorOutput(String error, String faultySensor, List<Object> lastFrames){
-        StatisticalFolder folder = StatisticalFolder.getInstance();
-        ErrorOutput output = new ErrorOutput(folder.getSystemRuntime(), folder.getNumDetectedObjects(), folder.getNumTrackedObjects(),
-                                                folder.getNumLandmarks(), getGlobalMap(), error ,faultySensor, lastFrames, getPreviousRobotPoses());
+    public void createErrorOutput(ErrorOutput output){
+        output.setStatistics(StatisticalFolder.getInstance());
+        output.setLandMarks(getGlobalMap());
+        output.setPoses(previousRobotPoses);
         toJson(output);
     }
 

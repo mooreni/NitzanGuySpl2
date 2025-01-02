@@ -45,7 +45,7 @@ public class PoseService extends MicroService {
     protected void initialize() {
         subscribeBroadcast(TickBroadcast.class, tickMessage ->{
             if(gpsimu.getStatus()==STATUS.ERROR){
-                sendBroadcast(new CrashedBroadcast(getName(), "", ""));
+                sendBroadcast(new CrashedBroadcast(getName()));
                 terminate();
             }
             else{
@@ -71,7 +71,7 @@ public class PoseService extends MicroService {
             }
         });
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
-            sendBroadcast(new CrashedBroadcast(getName(), "", "")); 
+            sendBroadcast(new CrashedBroadcast(getName())); 
             terminate();
         });
         latch.countDown();

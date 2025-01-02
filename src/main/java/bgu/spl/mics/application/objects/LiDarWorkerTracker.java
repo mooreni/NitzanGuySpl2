@@ -2,9 +2,6 @@ package bgu.spl.mics.application.objects;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-
-import bgu.spl.mics.application.services.LiDarService;
 
 
 /**
@@ -17,9 +14,6 @@ public class LiDarWorkerTracker {
     private int frequency;
     private STATUS status;
     private List<TrackedObject> lastTrackedObjects;
-    //I think these field makes sense to have for each camera?
-    private LiDarService liDarService;
-    private Thread thread;
     private String error = "LiDar sensor disconnected";
 
     public LiDarWorkerTracker(){
@@ -27,9 +21,6 @@ public class LiDarWorkerTracker {
         this.frequency=0;
         this.status=STATUS.UP;
         this.lastTrackedObjects = new ArrayList<TrackedObject>();
-        //I think thats how its meant to be done
-        //this.liDarService= new LiDarService(this);
-        //this.thread = new Thread(liDarService);
     }
 
     //Partial one - might be the only one needed
@@ -38,15 +29,8 @@ public class LiDarWorkerTracker {
         this.frequency=frequency;
         this.status=STATUS.UP;
         this.lastTrackedObjects = new ArrayList<TrackedObject>();
-        //I think thats how its meant to be done
-        //this.liDarService= new LiDarService(this);
-        //this.thread = new Thread(liDarService);
     }
 
-    public void startRunning(){
-        System.out.println(thread.getName() + getSensorName());
-        thread.start();
-    }
 
     public int getID(){
         return id;
@@ -68,9 +52,6 @@ public class LiDarWorkerTracker {
         this.lastTrackedObjects = trackedObjects;
     }
 
-    public LiDarService getLiDarService(){
-        return liDarService;
-    }
 
     public void setStatus(STATUS status){
         this.status = status;
@@ -84,7 +65,4 @@ public class LiDarWorkerTracker {
         return error;
     }
 
-    public void setLatch(CountDownLatch latch){
-        liDarService.setLatch(latch);
-    } 
 }
