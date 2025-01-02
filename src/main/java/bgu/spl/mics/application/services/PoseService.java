@@ -20,7 +20,7 @@ public class PoseService extends MicroService {
     /**
      * Constructor for PoseService.
      *
-     * @param gpsimu The GPSIMU object that provides the robot's pose data.
+     * @param gpsimu The GPSIMU object that provides the robot's pose data. 
      */
     public PoseService(GPSIMU gpsimu) {
         super("Pose");
@@ -28,6 +28,12 @@ public class PoseService extends MicroService {
         // TODO Implement this - do we need to add something else?
     }
 
+    public PoseService(GPSIMU gpsimu, CountDownLatch latch) {
+        super("Pose");
+        this.gpsimu = gpsimu;
+        this.latch = latch;
+    }
+    
     public void setLatch(CountDownLatch latch){
         this.latch = latch;
     }

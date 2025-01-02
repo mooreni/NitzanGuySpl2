@@ -28,8 +28,8 @@ public class LiDarWorkerTracker {
         this.status=STATUS.UP;
         this.lastTrackedObjects = new ArrayList<TrackedObject>();
         //I think thats how its meant to be done
-        this.liDarService= new LiDarService(this);
-        this.thread = new Thread(liDarService);
+        //this.liDarService= new LiDarService(this);
+        //this.thread = new Thread(liDarService);
     }
 
     //Partial one - might be the only one needed
@@ -39,8 +39,8 @@ public class LiDarWorkerTracker {
         this.status=STATUS.UP;
         this.lastTrackedObjects = new ArrayList<TrackedObject>();
         //I think thats how its meant to be done
-        this.liDarService= new LiDarService(this);
-        this.thread = new Thread(liDarService);
+        //this.liDarService= new LiDarService(this);
+        //this.thread = new Thread(liDarService);
     }
 
     public void startRunning(){
@@ -86,5 +86,5 @@ public class LiDarWorkerTracker {
 
     public void setLatch(CountDownLatch latch){
         liDarService.setLatch(latch);
-    }
+    } 
 }

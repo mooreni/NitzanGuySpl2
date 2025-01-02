@@ -38,8 +38,8 @@ public class Camera {
         this.camera_key="";
         this.stampedDetectedObjects = new ArrayList<StampedDetectedObjects>();
         //I think thats how its meant to be done
-        this.cameraService= new CameraService(this);
-        this.thread = new Thread(cameraService);
+        //this.cameraService= new CameraService(this);
+        //this.thread = new Thread(cameraService);
         this.sentObjectsCount=0;
         this.lastStampedDetectedObjects = null;
         this.error="";
@@ -54,8 +54,8 @@ public class Camera {
         this.stampedDetectedObjects = new ArrayList<StampedDetectedObjects>();
         loadData(filePath);
         //I think thats how its meant to be done
-        this.cameraService= new CameraService(this);
-        this.thread = new Thread(cameraService);
+        //this.cameraService= new CameraService(this);
+        //this.thread = new Thread(cameraService);
         this.sentObjectsCount=0;
         this.lastStampedDetectedObjects = null;
         this.error="";
@@ -138,5 +138,5 @@ public class Camera {
 
     public void setLatch(CountDownLatch latch){
         cameraService.setLatch(latch);
-    }
+    } 
 }

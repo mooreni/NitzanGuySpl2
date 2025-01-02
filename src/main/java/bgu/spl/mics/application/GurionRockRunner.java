@@ -11,7 +11,9 @@ import bgu.spl.mics.application.objects.GPSIMU;
 import bgu.spl.mics.application.objects.LiDarDataBase;
 import bgu.spl.mics.application.objects.LiDarWorkerTracker;
 import bgu.spl.mics.application.objects.StatisticalFolder;
+import bgu.spl.mics.application.services.CameraService;
 import bgu.spl.mics.application.services.FusionSlamService;
+import bgu.spl.mics.application.services.LiDarService;
 import bgu.spl.mics.application.services.PoseService;
 import bgu.spl.mics.application.services.TimeService;
 import bgu.spl.mics.MessageBusImpl;
@@ -46,7 +48,7 @@ public class GurionRockRunner {
         String poseDataRelativePath = config.getPoseJsonFile();
         Path poseDataPath = configDirectory.resolve(poseDataRelativePath).normalize();
         config.getCameras().setFilePath(camerasDataPath.toString());
-        config.updateCameras();
+        config.updateCameras(); 
 
 
         //Initialize the objects
@@ -69,29 +71,43 @@ public class GurionRockRunner {
 
         MessageBusImpl messageBus = MessageBusImpl.getInstance();
 
+        System.out.println(latch.getCount());
 
         for(Camera camera: cameras){
-            camera.startRunning();
-            camera.setLatch(latch);
+            CameraService camService = new CameraService(camera, latch);
+            Thread t = new Thread(camService);
+            t.start();
+            System.out.println(latch.getCount());
+
         }
+        System.out.println(latch.getCount());
+
         for(LiDarWorkerTracker lidarWorker: lidarWorkers){
-            lidarWorker.startRunning();
-            lidarWorker.setLatch(latch);
+            LiDarService liDarService = new LiDarService(lidarWorker, latch);
+            Thread t = new Thread(liDarService);
+            t.start();
+            System.out.println(latch.getCount());
+
         }
         Thread t1 = new Thread(poseService);
         System.out.println(t1.getName() + "poseService");
         t1.start();
+        System.out.println(latch.getCount());
+
 
 
         Thread t2 = new Thread(fusionSlamService);
         System.out.println(t2.getName() + "fusionService");
         t2.start();
 
+        System.out.println(latch.getCount());
         try{
             latch.await();
         }catch (InterruptedException e){
             e.printStackTrace();
         }
+        System.out.println(latch.getCount());
+
         Thread t3 = new Thread(timeService);
         System.out.println(t3.getName() + "timeService");
         t3.start();

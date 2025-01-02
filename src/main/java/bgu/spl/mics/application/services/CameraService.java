@@ -18,7 +18,7 @@ import bgu.spl.mics.application.objects.StatisticalFolder;
  * CameraService is responsible for processing data from the camera and
  * sending DetectObjectsEvents to LiDAR workers.
  * 
- * This service interacts with the Camera object to detect objects and updates
+ * This service interacts with the Camera object to detect objects and updates 
  * the system's StatisticalFolder upon sending its observations.
  */
 public class CameraService extends MicroService {
@@ -35,6 +35,13 @@ public class CameraService extends MicroService {
         this.camera = camera;
         currentTick=0;
         // TODO Implement this - do we need to add something else?
+    }
+
+    public CameraService(Camera camera, CountDownLatch latch) {
+        super("CameraService");
+        this.camera = camera;
+        this.latch = latch;
+        currentTick=0;
     }
 
     public void setLatch(CountDownLatch latch){

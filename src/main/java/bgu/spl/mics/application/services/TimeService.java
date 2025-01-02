@@ -16,7 +16,7 @@ public class TimeService extends MicroService {
     private int duration;
     private int currentTick;
     /**
-     * Constructor for TimeService.
+     * Constructor for TimeService. 
      *
      * @param TickTime  The duration of each tick in milliseconds.
      * @param Duration  The total number of ticks before the service terminates.

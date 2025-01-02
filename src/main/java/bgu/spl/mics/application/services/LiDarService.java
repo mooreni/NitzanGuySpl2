@@ -47,6 +47,14 @@ public class LiDarService extends MicroService {
         currentTick = 0;
         // TODO Implement this - do we need to add something else?
     }
+
+    public LiDarService(LiDarWorkerTracker LiDarWorkerTracker, CountDownLatch latch) {
+        super("LiDarService");
+        this.liDarWorkerTracker = LiDarWorkerTracker;
+        oldEvents = new ArrayList<>();
+        currentTick = 0;
+        this.latch = latch;
+    }
     
     public void setLatch(CountDownLatch latch){
         this.latch = latch;
@@ -126,7 +134,7 @@ public class LiDarService extends MicroService {
                     terminate();
                 }
             }
-        });
+        }); 
         subscribeBroadcast(TerminatedBroadcast.class, terminateMessage ->{
             if((terminateMessage.getSenderName().compareTo("TimeService") ==0) ||
                 (terminateMessage.getSenderName().compareTo("FusionSlam") ==0)){

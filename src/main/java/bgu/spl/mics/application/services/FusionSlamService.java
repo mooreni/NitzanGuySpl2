@@ -40,6 +40,14 @@ public class FusionSlamService extends MicroService {
         faultySensor = "";
     }
 
+    public FusionSlamService(CountDownLatch latch) {
+        super("FusionSlam");
+        this.fusionSlam = FusionSlam.getInstance();
+        didTimeTerminate = false;
+        error = "";
+        faultySensor = "";
+        this.latch = latch;
+    }
 
     public void setLatch(CountDownLatch latch){
         this.latch = latch;
@@ -114,7 +122,7 @@ public class FusionSlamService extends MicroService {
             }
 
             //Else: if the time service finished, the rest will recieve the broadcast from timeService and finish too eventually
-            //      if the time service didnt finish and only some finished too, continue as well
+            //      if the time service didnt finish and only some finished too, continue as well 
         });
 
         subscribeBroadcast(CrashedBroadcast.class, crashedMessage ->{
