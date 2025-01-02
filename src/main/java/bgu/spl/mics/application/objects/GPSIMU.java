@@ -19,6 +19,7 @@ public class GPSIMU {
     private List<Pose> poseList;
     private int sentPosesCounter;
 
+    //Constructors
     public GPSIMU(String filePath){
         currTime = 0;
         status = STATUS.UP;
@@ -42,18 +43,7 @@ public class GPSIMU {
         sentPosesCounter = 0;
     }
 
-    public STATUS getStatus(){
-        return status;
-    }
-
-    public int getTime(){
-        return currTime;
-    }
-
-    public List<Pose> getPoseList(){
-        return poseList;
-    }
-
+    //Load the GPSIMU with the list of poses from the json
     private void loadData(String filePath){
         Gson gson = new Gson();
         try (FileReader reader = new FileReader(filePath)) {
@@ -68,12 +58,26 @@ public class GPSIMU {
         }
     }
 
+    //Setters
+    public void setStatus(STATUS status){
+        this.status = status;
+    }
+
     public void incrementSentPosesCounter(){
         sentPosesCounter++;
     }
-    
-    public void setStatus(STATUS status){
-        this.status = status;
+
+    //Getters
+    public int getTime(){
+        return currTime;
+    }
+
+    public STATUS getStatus(){
+        return status;
+    }
+
+    public List<Pose> getPoseList(){
+        return poseList;
     }
 
     public int getSentPosesCounter(){

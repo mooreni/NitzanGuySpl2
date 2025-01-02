@@ -54,11 +54,10 @@ public class GurionRockRunner {
         //Initialize the objects
         List<Camera> cameras = config.getCameras().getCamerasConfigurations();
         List<LiDarWorkerTracker> lidarWorkers = config.getLidarWorkers().getLidarConfigurations();
-        LiDarDataBase lidarDataBase = LiDarDataBase.getInstance(lidarDataPath.toString());
+        LiDarDataBase.LoadData(lidarDataPath.toString());
         GPSIMU gpsimu = new GPSIMU(poseDataPath.toString());
-        FusionSlam fusionSlam = FusionSlam.getInstance(configDirectory.toString());
-        fusionSlam.setSensorsCount(cameras.size() + lidarWorkers.size() + 1);
-        StatisticalFolder statisticalFolder = StatisticalFolder.getInstance();
+        FusionSlam.setOutputPath(configDirectory.toString());
+        FusionSlam.getInstance().setSensorsCount(cameras.size() + lidarWorkers.size() + 1);
 
         //Initialize the services
         CountDownLatch latch = new CountDownLatch(cameras.size() + lidarWorkers.size() + 2);
@@ -68,8 +67,6 @@ public class GurionRockRunner {
         poseService.setLatch(latch);
         FusionSlamService fusionSlamService = new FusionSlamService();
         fusionSlamService.setLatch(latch);
-
-        MessageBusImpl messageBus = MessageBusImpl.getInstance();
 
         System.out.println(latch.getCount());
 
@@ -112,40 +109,7 @@ public class GurionRockRunner {
         System.out.println(t3.getName() + "timeService");
         t3.start();
 
-        // TODO: Start the simulation.
     }
 
     
 }
-
-/*Project to do and updates list
-
--Services:
-    TimeService: Mostly done, just need to make sure what happens once it terminates - line 41-42: send something?
-                           Check if time is in milliseconds or seconds
-
-    CameraService: Mostly done. Need to figure out lines 47,49
-
-    LiDarService: line 63: is it <= or ==?               
-    
-    FusionSlamService: what should we do with the tickMessage in fusionSlam
-
-    PoseService: 
-
-- ErrorHandling (page 21): didnt do
-
-More changes and to do:
-*/
-
-
-/* Notes on lidar worker process
-We need to do several things here.
-1. For every event, we need to go over obj.getDetectedObjects() and do ____ with it and the dataBase
-    a. the database should be read from a lidar_data.json file thats given to us, like in the examples folder
-2. with the result of this operation, we need to:
-    a. send a TrackedObjectEvent to fusionSLAM
-        -SendEvent gets back a future - do we need to do something with it?
-    b. save the results into lastTrackedObjects in LiDarWorkerTracker - a field of the last objects that were tracked
-3. Complete the event we just solved - the WDetectObjectsEvent. We need to do a complete to it
-4. save the results into the dataBase
-*/

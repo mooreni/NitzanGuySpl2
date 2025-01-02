@@ -25,7 +25,6 @@ public class PoseService extends MicroService {
     public PoseService(GPSIMU gpsimu) {
         super("Pose");
         this.gpsimu = gpsimu;
-        // TODO Implement this - do we need to add something else?
     }
 
     public PoseService(GPSIMU gpsimu, CountDownLatch latch) {

@@ -2,11 +2,8 @@ package bgu.spl.mics.application.objects;
 
 import java.util.List;
 import bgu.spl.mics.application.NormalOutput;
-
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,6 +16,7 @@ import bgu.spl.mics.application.ErrorOutput;
  * Implements the Singleton pattern to ensure a single instance of FusionSlam exists.
  */
 public class FusionSlam {
+
     // Singleton instance holder
     private static class FusionSlamHolder {
         private static FusionSlam instance = new FusionSlam();
@@ -27,20 +25,16 @@ public class FusionSlam {
     private List<LandMark> globalMap;
     private List<Pose> previousRobotPoses;
     private List<TrackedObject> waitingTrackedObjects;
-    private int sensorsCount;
-    private String path; //Path to output folder
-    private List<Object> lastFrames; //The last frames of the sensors
+    private int sensorsCount;                           //Number of active sensors
+    private String outputPath;                          //Path to output folder
+    private List<Object> lastFrames;                    //The last frames of the sensors
+
     /**
      * Retrieves the single instance of FusionSlam.
      *
      * @return The FusionSlam instance.
      */ 
     public static FusionSlam getInstance() {
-        return FusionSlamHolder.instance;
-    }
-
-    public static FusionSlam getInstance(String path) {
-        FusionSlamHolder.instance.path = path;
         return FusionSlamHolder.instance;
     }
 
@@ -53,8 +47,7 @@ public class FusionSlam {
         waitingTrackedObjects = new ArrayList<>();
         sensorsCount = 0;
         lastFrames = new ArrayList<>();
-        path = "";
-
+        outputPath = "";
     }
 
     /**
@@ -66,10 +59,7 @@ public class FusionSlam {
         globalMap.add(landmarks);
     }
 
-    public void addPose(Pose pose) {
-        previousRobotPoses.add(pose);
-    }
-
+    //Calculations
     public CloudPoint calculateCoordinates(Pose pose, CloudPoint cloudPoint) {
         // Step 1: Convert yaw from degrees to radians
         double yawRadians = Math.toRadians(pose.getYaw());  // Convert to radians
@@ -83,13 +73,6 @@ public class FusionSlam {
         double yGlobal = sinTheta * cloudPoint.getX() + cosTheta * cloudPoint.getY() + pose.getY();
         
         return new CloudPoint(xGlobal, yGlobal);
-    }
-
-    public List<LandMark> getGlobalMap() {
-        return globalMap;
-    }
-    public List<Pose> getPreviousRobotPoses() {
-        return previousRobotPoses;
     }
     
     public List<CloudPoint> averageCloudPoints(List<CloudPoint> oldList, List<CloudPoint> newList) { 
@@ -156,14 +139,63 @@ public class FusionSlam {
         addLandmark(newLandMark);
     }
 
-    public void addWaitingTrackedObject(TrackedObject trackedObject) {
-        waitingTrackedObjects.add(trackedObject);
+    //Output creation
+    //Creates a file that represents a terminated program
+    public void createNormalOutput(){
+        StatisticalFolder folder = StatisticalFolder.getInstance();
+        NormalOutput output = new NormalOutput(folder.getSystemRuntime(), folder.getNumDetectedObjects(), folder.getNumTrackedObjects(), folder.getNumLandmarks(), getGlobalMap());
+        //Creates the json and writes it
+        toJson(output);
+    }
+
+    //Creates a file that represents a crashed program
+    public void createErrorOutput(String error, String faultySensor, List<Object> lastFrames){
+        StatisticalFolder folder = StatisticalFolder.getInstance();
+        ErrorOutput output = new ErrorOutput(folder.getSystemRuntime(), folder.getNumDetectedObjects(), folder.getNumTrackedObjects(),
+                                                folder.getNumLandmarks(), getGlobalMap(), error ,faultySensor, lastFrames, getPreviousRobotPoses());
+        toJson(output);
+    }
+
+    //Creates the output json - of either type
+    public void toJson(Object output) {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (FileWriter writer = new FileWriter(outputPath + "/output_file.json")) {
+            // Serialize Java objects to JSON file
+            gson.toJson(output, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //Getters
+    public List<LandMark> getGlobalMap() {
+        return globalMap;
+    }
+    public List<Pose> getPreviousRobotPoses() {
+        return previousRobotPoses;
     }
 
     public List<TrackedObject> getWaitingTrackedObjects() {
         return waitingTrackedObjects;
     }
 
+    public int getSensorsCount() {
+        return sensorsCount;
+    }
+
+    public List<Object> getLastFrames() {
+        return lastFrames;
+    }
+
+    //Setters and adders
+    public void addPose(Pose pose) {
+        previousRobotPoses.add(pose);
+    }
+
+    public void addWaitingTrackedObject(TrackedObject trackedObject) {
+        waitingTrackedObjects.add(trackedObject);
+    }
+    
     public void setSensorsCount(int num) {
         sensorsCount = num;
     }
@@ -172,37 +204,7 @@ public class FusionSlam {
         sensorsCount--;
     }
 
-    public int getSensorsCount() {
-        return sensorsCount;
-    }
-
-    //Creates a file that represents the terminated program (didnt crash)
-    public void createNormalOutput(){
-        StatisticalFolder folder = StatisticalFolder.getInstance();
-        NormalOutput output = new NormalOutput(folder.getSystemRuntime(), folder.getNumDetectedObjects(), folder.getNumTrackedObjects(), folder.getNumLandmarks(), getGlobalMap());
-        //Creates the json and writes it
-        toJson(output);
-    }
-
-    public void createErrorOutput(String error, String faultySensor, List<Object> lastFrames){
-        StatisticalFolder folder = StatisticalFolder.getInstance();
-        ErrorOutput output = new ErrorOutput(folder.getSystemRuntime(), folder.getNumDetectedObjects(), folder.getNumTrackedObjects(),
-                                                folder.getNumLandmarks(), getGlobalMap(), error ,faultySensor, lastFrames, getPreviousRobotPoses());
-        toJson(output);
-    }
-
-    //Recieves the output json - of EITHER TYPE! I think it can recieve both normalOutput file or errorOutput file
-    public void toJson(Object output) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        try (FileWriter writer = new FileWriter(path + "/output_file.json")) {
-            // Serialize Java objects to JSON file
-            gson.toJson(output, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public List<Object> getLastFrames() {
-        return lastFrames;
+    public static void setOutputPath(String outputPath) {
+        FusionSlamHolder.instance.outputPath = outputPath;
     }
 }

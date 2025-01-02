@@ -45,7 +45,6 @@ public class LiDarService extends MicroService {
         this.liDarWorkerTracker = LiDarWorkerTracker;
         oldEvents = new ArrayList<>();
         currentTick = 0;
-        // TODO Implement this - do we need to add something else?
     }
 
     public LiDarService(LiDarWorkerTracker LiDarWorkerTracker, CountDownLatch latch) {

@@ -34,7 +34,6 @@ public class CameraService extends MicroService {
         super("CameraService");
         this.camera = camera;
         currentTick=0;
-        // TODO Implement this - do we need to add something else?
     }
 
     public CameraService(Camera camera, CountDownLatch latch) {
