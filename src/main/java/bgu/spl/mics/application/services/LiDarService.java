@@ -79,7 +79,15 @@ public class LiDarService extends MicroService {
                     liDarWorkerTracker.setLastTrackedObjects(trackedObjects);
                     liDarDataBase.setLastTrackedObjects(trackedObjects);
                     StatisticalFolder.getInstance().increaseNumTrackedObjects(trackedObjects.size());
+                }                
+                
+                //If we sent all the objects, terminate
+                if(liDarDataBase.getSentObjectsCount() == liDarDataBase.getStampedCloudPoints().size()){
+                    sendBroadcast(new TerminatedBroadcast(getName()));
+                    liDarWorkerTracker.setStatus(STATUS.DOWN);
+                    terminate();
                 }
+
 
             }        
         });
