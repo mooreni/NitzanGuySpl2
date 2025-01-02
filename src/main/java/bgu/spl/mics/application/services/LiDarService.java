@@ -78,6 +78,7 @@ public class LiDarService extends MicroService {
                 terminate();
             }
             else{
+                ifLidarFinished();
                 currentTick = tickMessage.getTickTime();
                 //Checks if the LiDarDataBase has an error at current time
                 if(liDarDataBase.checkForError(currentTick)){
@@ -105,6 +106,8 @@ public class LiDarService extends MicroService {
                     liDarWorkerTracker.setStatus(STATUS.DOWN);
                     terminate();
                 }
+                //If we sent all the objects, terminate
+               ifLidarFinished();
 
 
             }        
@@ -178,6 +181,14 @@ public class LiDarService extends MicroService {
             }
         }
         return trackedObjects;
+    }
+
+    public void ifLidarFinished(){
+        if(liDarDataBase.getSentObjectsCount() == liDarDataBase.getStampedCloudPoints().size()){
+            sendBroadcast(new TerminatedBroadcast(getName()));
+            liDarWorkerTracker.setStatus(STATUS.DOWN);
+            terminate();
+        }
     }
     
 }
